@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LunarFramework", "LunarFramework\LunarFramework.csproj", "{3373C9F7-FEC4-4663-90FC-8639BE57AE63}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LunarLoader", "LunarLoader\LunarLoader.csproj", "{37999EC1-1A27-4841-967B-F264646581BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LunarDevTools", "LunarDevTools\LunarDevTools.csproj", "{B95B5766-66E6-4BC6-AE05-DB52BA1E0846}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3373C9F7-FEC4-4663-90FC-8639BE57AE63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3373C9F7-FEC4-4663-90FC-8639BE57AE63}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3373C9F7-FEC4-4663-90FC-8639BE57AE63}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3373C9F7-FEC4-4663-90FC-8639BE57AE63}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37999EC1-1A27-4841-967B-F264646581BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37999EC1-1A27-4841-967B-F264646581BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37999EC1-1A27-4841-967B-F264646581BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37999EC1-1A27-4841-967B-F264646581BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B95B5766-66E6-4BC6-AE05-DB52BA1E0846}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B95B5766-66E6-4BC6-AE05-DB52BA1E0846}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B95B5766-66E6-4BC6-AE05-DB52BA1E0846}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B95B5766-66E6-4BC6-AE05-DB52BA1E0846}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
