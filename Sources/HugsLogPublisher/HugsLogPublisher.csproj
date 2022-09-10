@@ -4,11 +4,11 @@
     <PropertyGroup>
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-        <ProjectGuid>{37999EC1-1A27-4841-967B-F264646581BD}</ProjectGuid>
+        <ProjectGuid>{143AA269-5FC6-4CD7-9C3B-1CE92D0B5573}</ProjectGuid>
         <OutputType>Library</OutputType>
         <AppDesignerFolder>Properties</AppDesignerFolder>
-        <RootNamespace>LunarLoader</RootNamespace>
-        <AssemblyName>LunarLoader</AssemblyName>
+        <RootNamespace>HugsLogPublisher</RootNamespace>
+        <AssemblyName>HugsLogPublisher</AssemblyName>
         <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
         <LangVersion>default</LangVersion>
@@ -18,7 +18,7 @@
         <DebugSymbols>false</DebugSymbols>
         <DebugType>none</DebugType>
         <Optimize>false</Optimize>
-        <OutputPath>..\..\..\Map Preview\1.3\Assemblies\</OutputPath>
+        <OutputPath>..\..\..\Map Preview\1.3\Lunar\Components\</OutputPath>
         <DefineConstants>DEBUG;TRACE</DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
@@ -27,14 +27,18 @@
         <PlatformTarget>AnyCPU</PlatformTarget>
         <DebugType>none</DebugType>
         <Optimize>false</Optimize>
-        <OutputPath>..\..\..\Map Preview\1.3\Assemblies\</OutputPath>
+        <OutputPath>..\..\..\Map Preview\1.3\Lunar\Components\</OutputPath>
         <DefineConstants>TRACE</DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
     </PropertyGroup>
     <ItemGroup>
+        <Reference Include="0Harmony">
+          <HintPath>..\..\..\Harmony\Current\Assemblies\0Harmony.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
         <Reference Include="Assembly-CSharp">
-          <HintPath>E:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
+          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
           <Private>False</Private>
         </Reference>
         <Reference Include="System" />
@@ -42,13 +46,37 @@
         <Reference Include="System.Data" />
         <Reference Include="System.Xml" />
         <Reference Include="UnityEngine.CoreModule">
-          <HintPath>E:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.IMGUIModule">
+          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.TextRenderingModule">
+          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.UnityWebRequestModule">
+          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
           <Private>False</Private>
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="LunarLoader.cs" />
+        <Compile Include="AssemblyVersionInfo.cs" />
+        <Compile Include="Dialog_PublishLogs.cs" />
+        <Compile Include="Dialog_PublishLogsOptions.cs" />
+        <Compile Include="HarmonyUtility.cs" />
+        <Compile Include="HugsLibUtility.cs" />
+        <Compile Include="LogPublisher.cs" />
+        <Compile Include="LogPublisherOptions.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\LunarFramework\LunarFramework.csproj">
+        <Project>{3373c9f7-fec4-4663-90fc-8639be57ae63}</Project>
+        <Name>LunarFramework</Name>
+      </ProjectReference>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

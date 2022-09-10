@@ -2,5 +2,5 @@ namespace LunarFramework.Bootstrap;
 
 public enum LoadingState
 {
-    Pending, Loaded, Errored
+    Pending, Loaded, Initialized, Errored
 }

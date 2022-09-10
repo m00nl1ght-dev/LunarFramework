@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace LunarFramework.Bootstrap;
 
-public class LunarComponent
+public class LunarComponent : IComparable<LunarComponent>
 {
     public readonly string AssemblyName;
+    public readonly int SortOrderIdx;
     
     public Version LatestVersion => ProvidedVersions.Values.Max();
     public LunarMod LatestVersionProvidedBy => ProvidedVersions.OrderByDescending(p => p.Value).Select(p => p.Key).First();
@@ -23,8 +25,21 @@ public class LunarComponent
     
     public LoadingState LoadingState { get; internal set; } = LoadingState.Pending;
 
-    internal LunarComponent(string assemblyName)
+    public Assembly LoadedAssembly { get; internal set; }
+    
+    internal LunarAPI LunarAPI { get; set; }
+    
+    internal Action InitAction { get; set; }
+    internal Action CleanupAction { get; set; }
+
+    internal LunarComponent(string assemblyName, int sortOrderIdx)
     {
         AssemblyName = assemblyName;
+        SortOrderIdx = sortOrderIdx;
+    }
+
+    public int CompareTo(LunarComponent other)
+    {
+        return SortOrderIdx.CompareTo(other.SortOrderIdx);
     }
 }

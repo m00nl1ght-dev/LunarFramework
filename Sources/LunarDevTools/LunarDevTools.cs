@@ -15,11 +15,13 @@ public class LunarDevTools : Mod
 {
     private const string FrameworkDirName = "Lunar";
     private const string FrameworkAssemblyName = "LunarFramework";
+    private const string HarmonyAssemblyFileName = "HarmonyLib";
     
     private static string VersionFileIn(ModContentPack mcp) => Path.Combine(mcp.RootDir, "About", "Version.txt");
     private static string ComponentsDirIn(string frameworkDir) => Path.Combine(frameworkDir, "Components");
     private static string ManifestFileIn(string frameworkDir) => Path.Combine(frameworkDir, "Manifest.xml");
-    private static string FrameworkAssemblyFileIn(string frameworkDir) => Path.Combine(frameworkDir, "LunarFramework.dll");
+    private static string FrameworkAssemblyFileIn(string frameworkDir) => Path.Combine(ComponentsDirIn(frameworkDir), FrameworkAssemblyName + ".dll");
+    private static string HarmonyAssemblyFileIn(string frameworkDir) => Path.Combine(ComponentsDirIn(frameworkDir), HarmonyAssemblyFileName + ".dll");
     private static string CheckFileFor(string file) { int l; return ((l = file.LastIndexOf('.')) == -1 ? file : file.Substring(0, l)) + ".lfc"; }
     
     private static readonly Version InvalidVersion = new("0.0.0.0");
@@ -37,7 +39,7 @@ public class LunarDevTools : Mod
         }
         catch (Exception e)
         {
-            Debug.LogError(LogPrefix + "Failed to create check files.");
+            Log.Error(LogPrefix + "Failed to create check files.");
             Debug.LogException(e);
         }
     }
@@ -46,7 +48,10 @@ public class LunarDevTools : Mod
     {
         var lunarMods = (
             from mcp in LoadedModManager.RunningMods 
-            let dir = mcp.foldersToLoadDescendingOrder.FirstOrDefault(dir => Directory.Exists(Path.Combine(dir, FrameworkDirName))) 
+            let dir = mcp.foldersToLoadDescendingOrder
+                .Select(lf => Path.Combine(lf, FrameworkDirName))
+                .FirstOrDefault(Directory.Exists)
+            where dir != null
             let assemblyFile = FrameworkAssemblyFileIn(dir) 
             where File.Exists(assemblyFile) 
             let frameworkVersion = GetAssemblyVersion(assemblyFile) 
@@ -57,16 +62,15 @@ public class LunarDevTools : Mod
         
         foreach (var lunarMod in lunarMods)
         {
-            var frameworkAssemblyFile = FrameworkAssemblyFileIn(lunarMod.FrameworkDir);
             var modVersion = GetModVersion(lunarMod.ModContentPack);
             
             if (modVersion == InvalidVersion)
             {
-                Debug.LogError(LogPrefix + "Mod is missing version info: " + lunarMod.ModContentPack.PackageId);
+                Log.Error(LogPrefix + "Mod is missing version info: " + lunarMod.ModContentPack.PackageId);
                 continue;
             }
             
-            CreateCheckFile(modVersion, frameworkAssemblyFile);
+            CreateCheckFile(modVersion, ManifestFileIn(lunarMod.FrameworkDir));
 
             var componentDir = new DirectoryInfo(ComponentsDirIn(lunarMod.FrameworkDir));
             foreach (var file in componentDir.GetFiles("*.dll"))

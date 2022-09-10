@@ -17,18 +17,18 @@
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <PlatformTarget>AnyCPU</PlatformTarget>
         <DebugSymbols>false</DebugSymbols>
-        <DebugType>full</DebugType>
+        <DebugType>none</DebugType>
         <Optimize>false</Optimize>
-        <OutputPath>..\..\..\Map Preview\1.3\Lunar\</OutputPath>
+        <OutputPath>..\..\..\Map Preview\1.3\Lunar\Components\</OutputPath>
         <DefineConstants>DEBUG;TRACE</DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
         <PlatformTarget>AnyCPU</PlatformTarget>
-        <DebugType>pdbonly</DebugType>
+        <DebugType>none</DebugType>
         <Optimize>false</Optimize>
-        <OutputPath>..\..\..\Map Preview\1.3\Lunar\</OutputPath>
+        <OutputPath>..\..\..\Map Preview\1.3\Lunar\Components\</OutputPath>
         <DefineConstants>TRACE</DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
@@ -50,6 +50,18 @@
           <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
           <Private>False</Private>
         </Reference>
+        <Reference Include="UnityEngine.IMGUIModule">
+          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.TextRenderingModule">
+          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.UnityWebRequestModule">
+          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Bootstrap\LoadingState.cs" />
@@ -57,8 +69,20 @@
         <Compile Include="Bootstrap\Entrypoint.cs" />
         <Compile Include="Bootstrap\LunarMod.cs" />
         <Compile Include="Bootstrap\Manifest.cs" />
+        <Compile Include="Internal\LunarRoot.cs" />
+        <Compile Include="Internal\Patches\Patch_RimWorld_MainMenuDrawer.cs" />
+        <Compile Include="Internal\Patches\Patch_Verse_StaticConstructorOnStartupUtility.cs" />
+        <Compile Include="Logging\IngameLogContext.cs" />
+        <Compile Include="Logging\LogContext.cs" />
+        <Compile Include="Logging\LogPublisher.cs" />
+        <Compile Include="Patching\ModCompat.cs" />
+        <Compile Include="Patching\PatchGroup.cs" />
+        <Compile Include="Patching\IPatchGroup.cs" />
         <Compile Include="LunarAPI.cs" />
+        <Compile Include="Patching\PatchGroupAttribute.cs" />
+        <Compile Include="Patching\PatchGroupSubscriber.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
+        <Compile Include="Utility\CommonExtensions.cs" />
         <Compile Include="Utility\LifecycleHooks.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

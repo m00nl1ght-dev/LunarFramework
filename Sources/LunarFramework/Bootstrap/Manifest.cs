@@ -11,6 +11,8 @@ public class Manifest
     public string Name { get; set; }
     public string PackageId { get; set; }
     public string Authors { get; set; }
+    
+    public string MinGameVersion { get; set; }
 
     public CompatibilityList Compatibility { get; set; }
 

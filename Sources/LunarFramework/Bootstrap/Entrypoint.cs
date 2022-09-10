@@ -8,34 +8,28 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using HarmonyLib;
+using LunarFramework.Internal;
 using LunarFramework.Utility;
+using RimWorld;
 using UnityEngine;
 using Verse;
-using Debug = UnityEngine.Debug;
 
 namespace LunarFramework.Bootstrap;
 
 internal static class Entrypoint
 {
-    private const string LoaderAssemblyFileName = "LunarLoader.dll";
-
     internal static readonly Dictionary<string, LunarMod> LunarMods = new();
     internal static readonly Dictionary<string, LunarComponent> LunarComponents = new();
 
     internal static readonly List<string> CleanedUpOldAssemblies = new();
-    
-    internal static string LogPrefix => "[LunarFramework v" + LunarAPI.FrameworkVersion + "] ";
-    
-    static Entrypoint()
+
+    internal static void RunBootstrap()
     {
-        RunBootstrap();
-    }
-    
-    private static void RunBootstrap()
-    {
+        LunarRoot.Initialize();
+        
         FindLunarMods();
         
-        foreach (var mod in LunarMods.Values)
+        foreach (var mod in LunarMods.Values.OrderBy(m => m.SortOrderIdx))
         {
             try
             {
@@ -68,10 +62,13 @@ internal static class Entrypoint
         foreach
         (
             var mod in from mcp in LoadedModManager.RunningMods 
-            let dir = mcp.foldersToLoadDescendingOrder.FirstOrDefault(dir => Directory.Exists(LunarMod.FrameworkDirIn(dir))) 
+            let dir = mcp.foldersToLoadDescendingOrder
+                .Select(LunarMod.FrameworkDirIn)
+                .FirstOrDefault(Directory.Exists)
+            where dir != null
             let assemblyFile = LunarMod.FrameworkAssemblyFileIn(dir) 
             where File.Exists(assemblyFile) 
-            select new LunarMod(mcp, dir)
+            select new LunarMod(mcp, dir, LunarMods.Count)
         )
         {
             LunarMods[mod.ModContentPack.PackageId] = mod;
@@ -100,16 +97,27 @@ internal static class Entrypoint
         }
         catch (Exception e)
         {
-            OnError(mod, "an error occured while reading its manifest file", true, e);
+            OnError(mod, "an error occured while reading its manifest file.", true, e);
             mod.LoadingState = LoadingState.Errored;
             return;
         }
 
         if (!mod.IsModContentPackValid())
         {
-            OnError(mod, "its metadata is damaged or incomplete");
+            OnError(mod, "its metadata is damaged or incomplete.");
             mod.LoadingState = LoadingState.Errored;
             return;
+        }
+
+        if (mod.Manifest.MinGameVersion != null)
+        {
+            var minVersion = ParseVersion(mod.Manifest.MinGameVersion);
+            if (VersionControl.CurrentVersion < minVersion)
+            {
+                OnError(mod, "it requires RimWorld version " + minVersion + " or later.");
+                mod.LoadingState = LoadingState.Errored;
+                return;
+            }
         }
         
         if (mod.Manifest.Compatibility.Lunar != null)
@@ -157,7 +165,7 @@ internal static class Entrypoint
 
         if (!CleanUpOldAssemblies(mod))
         {
-            OnError(mod, "its files are damaged or incomplete");
+            OnError(mod, "its files are damaged or incomplete.");
             mod.LoadingState = LoadingState.Errored;
             return;
         }
@@ -194,7 +202,8 @@ internal static class Entrypoint
                 return;
             }
             
-            var component = LunarComponents.TryGetValue(componentDef.AssemblyName) ?? new LunarComponent(componentDef.AssemblyName);
+            var component = LunarComponents.TryGetValue(componentDef.AssemblyName);
+            component ??= new LunarComponent(componentDef.AssemblyName, LunarComponents.Count);
             component.ProvidedVersionsInternal[mod] = assemblyVersion;
             if (componentDef.Aliases != null) component.AliasesInternal.AddRange(componentDef.Aliases);
             if (!componentDef.AllowNonLunarSource) component.AllowNonLunarSource = false;
@@ -204,9 +213,11 @@ internal static class Entrypoint
 
     private static bool CleanUpOldAssemblies(LunarMod mod)
     {
+        const string loaderAssemblyFileName = "LunarLoader.dll";
+        
         var oldAssmeblies = ModContentPack.GetAllFilesForModPreserveOrder(mod.ModContentPack, "Assemblies/", e => e.ToLower() == ".dll")
             .Select(f => f.Item2)
-            .Where(f => !f.Name.Equals(LoaderAssemblyFileName))
+            .Where(f => !f.Name.Equals(loaderAssemblyFileName))
             .ToList();
 
         if (oldAssmeblies.Count == 0) return true;
@@ -232,16 +243,6 @@ internal static class Entrypoint
     {
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
 
-        void OnComponentError(LunarComponent component, string error, Exception exception = null)
-        {
-            component.LoadingState = LoadingState.Errored;
-            foreach (var mod in component.ProvidingMods.Where(m => m.LoadingState == LoadingState.Pending))
-            {
-                OnError(mod, error, false, exception);
-                mod.LoadingState = LoadingState.Errored;
-            }
-        }
-
         foreach (var component in LunarComponents.Values)
         {
             foreach (var alias in component.Aliases.Prepend(component.AssemblyName))
@@ -254,7 +255,7 @@ internal static class Entrypoint
                     }
                     else
                     {
-                        OnComponentError(component, "assembly '" + alias + "' is already loaded");
+                        OnError(component, "assembly '" + alias + "' is already loaded");
                         break;
                     }
                 }
@@ -267,8 +268,10 @@ internal static class Entrypoint
         var runningModClasses = (Dictionary<Type, Mod>) runningModClassesField.GetValue(null);
         if (runningModClasses == null) throw new Exception("failed to get runningModClasses");
 
-        foreach (var component in LunarComponents.Values.Where(m => m.LoadingState == LoadingState.Pending))
+        foreach (var component in LunarComponents.Values.OrderBy(m => m.SortOrderIdx))
         {
+            if (component.LoadingState != LoadingState.Pending) continue;
+            
             var provider = component.LatestVersionProvidedBy;
             if (provider == null) continue;
             
@@ -284,7 +287,7 @@ internal static class Entrypoint
             }
             catch (Exception e)
             {
-                OnComponentError(component, "failed to load assembly '" + component.AssemblyName + "'", e);
+                OnError(component, "failed to load assembly '" + component.AssemblyName + "'", e);
                 continue;
             }
             
@@ -294,7 +297,7 @@ internal static class Entrypoint
             }
             catch (ReflectionTypeLoadException e)
             {
-                OnComponentError(component, "failed to get types in assembly '" + component.AssemblyName + "'");
+                OnError(component, "failed to get types in assembly '" + component.AssemblyName + "'");
                 var stringBuilder = new StringBuilder();
                 stringBuilder.AppendLine("ReflectionTypeLoadException getting types in assembly " + assembly.GetName().Name + ": " + e);
                 stringBuilder.AppendLine().AppendLine("Loader exceptions:");
@@ -304,10 +307,11 @@ internal static class Entrypoint
             }
             catch (Exception e)
             {
-                OnComponentError(component, "failed to get types in assembly '" + component.AssemblyName + "'", e);
+                OnError(component, "failed to get types in assembly '" + component.AssemblyName + "'", e);
                 continue;
             }
-            
+
+            component.LoadedAssembly = assembly;
             provider.ModContentPack.assemblies.loadedAssemblies.Add(assembly);
             GenTypes.ClearCache();
             
@@ -322,7 +326,7 @@ internal static class Entrypoint
                 }
                 catch (Exception e)
                 {
-                    OnComponentError(component, "error in component initializer '" + modType.FullName + "'", e);
+                    OnError(component, "error in '" + modType.FullName + "'", e);
                     break;
                 }
             }
@@ -330,6 +334,44 @@ internal static class Entrypoint
             if (component.LoadingState == LoadingState.Pending)
             {
                 component.LoadingState = LoadingState.Loaded;
+            }
+        }
+    }
+    
+    internal static void OnPlayDataLoadFinished()
+    {
+        LunarRoot.BootstrapPatchGroup.UnsubscribeAll();
+
+        foreach (var component in LunarComponents.Values.OrderBy(m => m.SortOrderIdx))
+        {
+            if (component.LoadingState != LoadingState.Loaded) continue;
+            InitComponent(component);
+        }
+        
+        foreach (var mod in LunarMods.Values.Where(m => m.LoadingState == LoadingState.Loaded))
+        {
+            mod.LoadingState = LoadingState.Initialized;
+        }
+    }
+
+    private static void InitComponent(LunarComponent component)
+    {
+        try
+        {
+            component.InitAction?.Invoke();
+            component.LoadingState = LoadingState.Initialized;
+        }
+        catch (Exception e)
+        {
+            OnError(component, "an unknown error occured during its initialization.", e);
+
+            try
+            {
+                component.CleanupAction?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogException(ex);
             }
         }
     }
@@ -344,20 +386,25 @@ internal static class Entrypoint
 
         if (askForRedownload)
         {
-            Log.Warning(LogPrefix + logMessage);
+            LunarRoot.Logger.Warn(logMessage, exception);
             ShowMessageAfterStartup(mod.ModContentPack, popupMessage);
         }
         else
         {
-            Log.Error(LogPrefix + logMessage);
-        }
-
-        if (exception != null)
-        {
-            Debug.LogException(exception);
+            LunarRoot.Logger.Error(logMessage, exception);
         }
     }
 
+    private static void OnError(LunarComponent component, string error, Exception exception = null)
+    {
+        component.LoadingState = LoadingState.Errored;
+        foreach (var mod in component.ProvidingMods.Where(m => m.LoadingState != LoadingState.Errored))
+        {
+            OnError(mod, error, false, exception);
+            mod.LoadingState = LoadingState.Errored;
+        }
+    }
+    
     private static void OnConflict(LunarMod mod, ModContentPack other, Version minVersion)
     {
         string message = minVersion != null
@@ -371,12 +418,12 @@ internal static class Entrypoint
 
         if (minVersion != null)
         {
-            Log.Warning(LogPrefix + message);
+            LunarRoot.Logger.Warn(message);
             ShowMessageAfterStartup(other, message);
         }
         else
         {
-            Log.Error(LogPrefix + message);
+            LunarRoot.Logger.Error(message);
         }
     }
     
@@ -403,7 +450,7 @@ internal static class Entrypoint
 
         string openButtonText = isSteamContent ? "Open Workshop page" : "Open GitHub page";
         
-        LifecycleHooks.DoAfterStartup(() =>
+        LifecycleHooks.InternalInstance.DoOnceOnMainMenu(() =>
         {
             Find.WindowStack.Add(new Dialog_MessageBox(message, openButtonText, OpenModPageAction, "Close"));
         });

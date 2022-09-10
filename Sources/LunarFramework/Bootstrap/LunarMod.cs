@@ -10,7 +10,7 @@ public class LunarMod
     internal static string AssembliesDirIn(string loadDir) => Path.Combine(loadDir, "Assemblies");
     internal static string ComponentsDirIn(string frameworkDir) => Path.Combine(frameworkDir, "Components");
     internal static string ManifestFileIn(string frameworkDir) => Path.Combine(frameworkDir, "Manifest.xml");
-    internal static string FrameworkAssemblyFileIn(string frameworkDir) => Path.Combine(frameworkDir, "LunarFramework.dll");
+    internal static string FrameworkAssemblyFileIn(string frameworkDir) => Path.Combine(ComponentsDirIn(frameworkDir), "LunarFramework.dll");
     internal static string VersionFileIn(ModContentPack mcp) => Path.Combine(mcp.RootDir, "About", "Version.txt");
 
     internal static readonly Version InvalidVersion = new("0.0.0.0");
@@ -18,6 +18,7 @@ public class LunarMod
     public readonly ModContentPack ModContentPack;
     public readonly string FrameworkDir;
     public readonly Version Version;
+    public readonly int SortOrderIdx;
 
     public string Name => ModContentPack.Name;
     public string PackageId => ModContentPack.PackageId;
@@ -30,19 +31,20 @@ public class LunarMod
 
     public LoadingState LoadingState { get; internal set; } = LoadingState.Pending;
 
-    internal LunarMod(ModContentPack modContentPack, string frameworkDir)
+    internal LunarMod(ModContentPack modContentPack, string frameworkDir, int sortOrderIdx)
     {
         ModContentPack = modContentPack;
         FrameworkDir = frameworkDir;
+        SortOrderIdx = sortOrderIdx;
         Version = ReadModVersion();
     }
 
     internal bool IsModContentPackValid()
     {
         if (ModContentPack == null) return false;
-        if (!ModContentPack.Name.EqualsIgnoreCase(Manifest.Name)) return false;
-        if (!ModContentPack.PackageId.EqualsIgnoreCase(Manifest.PackageId)) return false;
-        if (!ModContentPack.ModMetaData.AuthorsString.EqualsIgnoreCase(Manifest.Authors)) return false;
+        if (Manifest.Name != null && !ModContentPack.Name.EqualsIgnoreCase(Manifest.Name)) return false;
+        if (Manifest.PackageId != null && !ModContentPack.PackageId.EqualsIgnoreCase(Manifest.PackageId)) return false;
+        if (Manifest.Authors != null && !ModContentPack.ModMetaData.AuthorsString.EqualsIgnoreCase(Manifest.Authors)) return false;
         return true;
     }
     
