@@ -19,7 +19,30 @@ namespace HugsLogPublisher;
 [StaticConstructorOnStartup]
 public class LogPublisher
 {
-    internal static readonly LunarAPI LunarAPI = LunarAPI.Create("HugsLogPublisher");
+    internal static readonly LunarAPI LunarAPI = LunarAPI.Create("HugsLogPublisher", Init);
+
+    public static readonly LogPublisher Instance = new();
+
+    private static void Init()
+    {
+        LunarAPI.LifecycleHooks.DoOnGUI(OnGUI);
+    }
+    
+    private static void OnGUI()
+    {
+        if (Event.current.type != EventType.KeyDown) return;
+        
+        if (Input.GetKey(KeyCode.F12) && HugsLibUtility.ControlIsHeld)
+        {
+            if (HugsLibUtility.AltIsHeld) {
+                Instance.CopyToClipboard();
+            } else {
+                Instance.ShowPublishPrompt();
+            }
+            
+            Event.current.Use();
+        }
+    }
 
     public enum PublisherStatus
     {
@@ -67,8 +90,8 @@ public class LogPublisher
         if (PublisherIsReady())
         {
             Find.WindowStack.Add(new Dialog_PublishLogsOptions(
-                "HugsLib_logs_shareConfirmTitle".Translate(),
-                "HugsLib_logs_shareConfirmMessage".Translate(),
+                "HugsLogPublisher.shareConfirmTitle".Translate(),
+                "HugsLogPublisher.shareConfirmMessage".Translate(),
                 _publishOptions
             )
             {

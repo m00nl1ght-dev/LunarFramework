@@ -53,6 +53,11 @@ public class LifecycleHooks
     
     public void DoOnceOnShutdown(Action action)
     {
-        LunarRoot.OnQuit += action;
+        LunarRoot.DoOnQuit += action;
+    }
+    
+    public void DoOnGUI(Action action)
+    {
+        LunarRoot.DoOnGUI += action;
     }
 }

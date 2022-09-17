@@ -16,12 +16,29 @@ namespace HugsLogPublisher;
 internal static class HugsLibUtility
 {
     /// <summary>
+    /// Returns true if the left or right Alt keys are currently pressed.
+    /// </summary>
+    public static bool AltIsHeld => 
+        Input.GetKey(KeyCode.LeftAlt) || 
+        Input.GetKey(KeyCode.RightAlt);
+
+    /// <summary>
+    /// Returns true if the left or right Control keys are currently pressed.
+    /// Mac command keys are supported, as well.
+    /// </summary>
+    public static bool ControlIsHeld => 
+        Input.GetKey(KeyCode.LeftControl) || 
+        Input.GetKey(KeyCode.RightControl) || 
+        Input.GetKey(KeyCode.LeftCommand) || 
+        Input.GetKey(KeyCode.RightCommand);
+
+    /// <summary>
     /// Copies a string to the system copy buffer and displays a confirmation message.
     /// </summary>
     public static void CopyToClipboard(string data)
     {
         GUIUtility.systemCopyBuffer = data;
-        Messages.Message("HugsLib_copiedToClipboard".Translate(), MessageTypeDefOf.TaskCompletion);
+        Messages.Message("HugsLogPublisher.copiedToClipboard".Translate(), MessageTypeDefOf.TaskCompletion);
     }
 
     /// <summary>

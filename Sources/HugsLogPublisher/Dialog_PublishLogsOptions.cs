@@ -63,7 +63,7 @@ internal class Dialog_PublishLogsOptions : Window
 
         l.Gap(gapSize * 2f);
 
-        _options.UseCustomOptions = !AddOptionCheckbox(l, "HugsLib_logs_useRecommendedSettings", null,
+        _options.UseCustomOptions = !AddOptionCheckbox(l, "HugsLogPublisher.useRecommendedSettings", null,
             !_options.UseCustomOptions, out bool optionsUsageChanged);
         if (optionsUsageChanged)
         {
@@ -74,13 +74,13 @@ internal class Dialog_PublishLogsOptions : Window
         if (_options.UseCustomOptions)
         {
             const float indent = gapSize * 2f;
-            _options.UseUrlShortener = AddOptionCheckbox(l, "HugsLib_logs_shortUrls", "HugsLib_logs_shortUrls_tip",
+            _options.UseUrlShortener = AddOptionCheckbox(l, "HugsLogPublisher.shortUrls", "HugsLogPublisher.shortUrls_tip",
                 _options.UseUrlShortener, out _, indent);
-            _options.IncludePlatformInfo = AddOptionCheckbox(l, "HugsLib_logs_platformInfo",
-                "HugsLib_logs_platformInfo_tip",
+            _options.IncludePlatformInfo = AddOptionCheckbox(l, "HugsLogPublisher.platformInfo",
+                "HugsLogPublisher.platformInfo_tip",
                 _options.IncludePlatformInfo, out _, indent);
-            _options.AllowUnlimitedLogSize = AddOptionCheckbox(l, "HugsLib_logs_unlimitedLogSize",
-                "HugsLib_logs_unlimitedLogSize_tip",
+            _options.AllowUnlimitedLogSize = AddOptionCheckbox(l, "HugsLogPublisher.unlimitedLogSize",
+                "HugsLogPublisher.unlimitedLogSize_tip",
                 _options.AllowUnlimitedLogSize, out _, indent);
         }
 
@@ -98,14 +98,14 @@ internal class Dialog_PublishLogsOptions : Window
         if (_options.UseCustomOptions)
         {
             if (Widgets.ButtonText(rightButtonsRect.LeftPartPixels(buttonSize.x),
-                    "HugsLib_logs_toClipboardBtn".Translate()))
+                    "HugsLogPublisher.toClipboardBtn".Translate()))
             {
                 Close();
                 OnCopy?.Invoke();
             }
         }
 
-        if (Widgets.ButtonText(rightButtonsRect.RightPartPixels(buttonSize.x), "HugsLib_logs_uploadBtn".Translate()))
+        if (Widgets.ButtonText(rightButtonsRect.RightPartPixels(buttonSize.x), "HugsLogPublisher.uploadBtn".Translate()))
         {
             OnAcceptKeyPressed();
         }

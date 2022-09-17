@@ -25,10 +25,10 @@ internal class Dialog_PublishLogs : Window
     private readonly Dictionary<LogPublisher.PublisherStatus, StatusLabelEntry> _statusMessages = new()
     {
         { LogPublisher.PublisherStatus.Ready, new StatusLabelEntry("", false) },
-        { LogPublisher.PublisherStatus.Uploading, new StatusLabelEntry("HugsLib_logs_uploading", true) },
-        { LogPublisher.PublisherStatus.Shortening, new StatusLabelEntry("HugsLib_logs_shortening", true) },
-        { LogPublisher.PublisherStatus.Done, new StatusLabelEntry("HugsLib_logs_uploaded", false) },
-        { LogPublisher.PublisherStatus.Error, new StatusLabelEntry("HugsLib_logs_uploadError", false) }
+        { LogPublisher.PublisherStatus.Uploading, new StatusLabelEntry("HugsLogPublisher.uploading", true) },
+        { LogPublisher.PublisherStatus.Shortening, new StatusLabelEntry("HugsLogPublisher.shortening", true) },
+        { LogPublisher.PublisherStatus.Done, new StatusLabelEntry("HugsLogPublisher.uploaded", false) },
+        { LogPublisher.PublisherStatus.Error, new StatusLabelEntry("HugsLogPublisher.uploadError", false) }
     };
 
     public Dialog_PublishLogs(LogPublisher logPublisher)
@@ -50,7 +50,7 @@ internal class Dialog_PublishLogs : Window
     {
         Text.Font = GameFont.Medium;
         var titleRect = new Rect(inRect.x, inRect.y, inRect.width, 40);
-        Widgets.Label(titleRect, "HugsLib_logs_publisherTitle".Translate());
+        Widgets.Label(titleRect, "HugsLogPublisher.publisherTitle".Translate());
         Text.Font = GameFont.Small;
         
         var labelEntry = _statusMessages[_publisher.Status];
@@ -85,7 +85,7 @@ internal class Dialog_PublishLogs : Window
             Text.Font = GameFont.Small;
             var copyBtnRect = new Rect(inRect.width - _copyButtonSize.x, urlAreaRect.y, _copyButtonSize.x, _copyButtonSize.y);
             
-            if (Widgets.ButtonText(copyBtnRect, "HugsLib_logs_copy".Translate()))
+            if (Widgets.ButtonText(copyBtnRect, "HugsLogPublisher.copy".Translate()))
             {
                 HugsLibUtility.CopyToClipboard(_publisher.ResultUrl);
             }
@@ -95,14 +95,14 @@ internal class Dialog_PublishLogs : Window
             _controlButtonSize.y);
         if (_publisher.Status == LogPublisher.PublisherStatus.Error)
         {
-            if (Widgets.ButtonText(bottomLeftBtnRect, "HugsLib_logs_retryBtn".Translate()))
+            if (Widgets.ButtonText(bottomLeftBtnRect, "HugsLogPublisher.retryBtn".Translate()))
             {
                 _publisher.BeginUpload();
             }
         }
         else if (_publisher.Status == LogPublisher.PublisherStatus.Done)
         {
-            if (Widgets.ButtonText(bottomLeftBtnRect, "HugsLib_logs_browseBtn".Translate()))
+            if (Widgets.ButtonText(bottomLeftBtnRect, "HugsLogPublisher.browseBtn".Translate()))
             {
                 Application.OpenURL(_publisher.ResultUrl);
             }
@@ -113,7 +113,7 @@ internal class Dialog_PublishLogs : Window
         if (_publisher.Status == LogPublisher.PublisherStatus.Uploading ||
             _publisher.Status == LogPublisher.PublisherStatus.Shortening)
         {
-            if (Widgets.ButtonText(bottomRightBtnRect, "HugsLib_logs_abortBtn".Translate()))
+            if (Widgets.ButtonText(bottomRightBtnRect, "HugsLogPublisher.abortBtn".Translate()))
             {
                 _publisher.AbortUpload();
             }

@@ -16,7 +16,8 @@ internal class LunarRoot : MonoBehaviour
     internal static readonly PatchGroup CompatPatchGroup = new("LunarFramework.Compat");
     internal static readonly PatchGroup BootstrapPatchGroup = new("LunarFramework.Bootstrap");
 
-    internal static event Action OnQuit;
+    internal static event Action DoOnGUI;
+    internal static event Action DoOnQuit;
 
     internal static void Initialize()
     {
@@ -53,8 +54,13 @@ internal class LunarRoot : MonoBehaviour
         Instance.StartCoroutine(coroutine);
     }
 
+    private void OnGUI()
+    {
+        DoOnGUI?.Invoke();
+    }
+
     private void OnApplicationQuit()
     {
-        OnQuit?.Invoke();
+        DoOnQuit?.Invoke();
     }
 }
