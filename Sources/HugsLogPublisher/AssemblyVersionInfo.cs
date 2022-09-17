@@ -65,12 +65,7 @@ internal class AssemblyVersionInfo
 
     public override string ToString()
     {
-        if (AssemblyFileVersion == null)
-        {
-            return $"{AssemblyVersion.ToSemanticString()} [no FileVersionInfo]";
-        }
-
-        if (AssemblyFileVersion == AssemblyVersion)
+        if (AssemblyFileVersion == null || AssemblyFileVersion == AssemblyVersion)
         {
             return AssemblyVersion.ToSemanticString();
         }

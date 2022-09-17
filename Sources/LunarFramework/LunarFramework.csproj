@@ -69,6 +69,7 @@
         <Compile Include="Bootstrap\Entrypoint.cs" />
         <Compile Include="Bootstrap\LunarMod.cs" />
         <Compile Include="Bootstrap\Manifest.cs" />
+        <Compile Include="Internal\Compatibility\ModCompat_HugsLib.cs" />
         <Compile Include="Internal\LunarRoot.cs" />
         <Compile Include="Internal\Patches\Patch_RimWorld_MainMenuDrawer.cs" />
         <Compile Include="Internal\Patches\Patch_Verse_StaticConstructorOnStartupUtility.cs" />

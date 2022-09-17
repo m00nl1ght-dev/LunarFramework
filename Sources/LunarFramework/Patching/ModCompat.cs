@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using LunarFramework.Logging;
 using Verse;
 
 namespace LunarFramework.Patching;
@@ -13,11 +14,16 @@ public abstract class ModCompat
 
     public static void ApplyAll(LunarAPI lunarAPI, PatchGroup patchGroup)
     {
+        ApplyAll(lunarAPI.Component.LoadedAssembly, lunarAPI.LogContext, patchGroup);
+    }
+
+    public static void ApplyAll(Assembly assembly, LogContext logContext, PatchGroup patchGroup)
+    {
         var assemblies = LoadedModManager.RunningModsListForReading
             .SelectMany(m => m.assemblies.loadedAssemblies).Distinct()
             .ToDictionary(a => a.GetName().Name);
 
-        foreach (var type in AccessTools.GetTypesFromAssembly(lunarAPI.Component.LoadedAssembly))
+        foreach (var type in AccessTools.GetTypesFromAssembly(assembly))
         {
             if (type.IsSubclassOf(typeof(ModCompat)) && !type.IsAbstract)
             {
@@ -32,13 +38,13 @@ public abstract class ModCompat
                         }
                         catch (Exception e)
                         {
-                            lunarAPI.LogContext.Error("Failed to apply compatibility patches for " + instance.DisplayName, e);
+                            logContext.Error("Failed to apply compatibility patches for " + instance.DisplayName, e);
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    lunarAPI.LogContext.Error("Failed to create compatibility patches from " + type.Name, e);
+                    logContext.Error("Failed to create compatibility patches from " + type.Name, e);
                 }
             }
         }

@@ -184,9 +184,13 @@ internal static class HugsLibUtility
     public static FileInfo GetModAssemblyFileInfo(string assemblyName, [NotNull] ModContentPack contentPack) {
         if (contentPack == null) throw new ArgumentNullException(nameof(contentPack));
         const string assembliesFolderName = "Assemblies";
+        const string lunarComponentsFolderName = "Lunar/Components";
         var expectedAssemblyFileName = $"{assemblyName}.dll"; 
         var modAssemblyFolderFiles = ModContentPack.GetAllFilesForMod(contentPack, assembliesFolderName);
-        return modAssemblyFolderFiles.Values.FirstOrDefault(f => f.Name == expectedAssemblyFileName);
+        var fromAssemblyFolder = modAssemblyFolderFiles.Values.FirstOrDefault(f => f.Name == expectedAssemblyFileName);
+        if (fromAssemblyFolder != null) return fromAssemblyFolder;
+        var lunarComponentFolderFiles = ModContentPack.GetAllFilesForMod(contentPack, lunarComponentsFolderName);
+        return lunarComponentFolderFiles.Values.FirstOrDefault(f => f.Name == expectedAssemblyFileName);
     }
     
     /// <summary>

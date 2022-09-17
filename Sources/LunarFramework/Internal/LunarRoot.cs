@@ -13,6 +13,7 @@ internal class LunarRoot : MonoBehaviour
     internal static LunarRoot Instance { get; private set; }
 
     internal static readonly PatchGroup MainPatchGroup = new("LunarFramework.Main");
+    internal static readonly PatchGroup CompatPatchGroup = new("LunarFramework.Compat");
     internal static readonly PatchGroup BootstrapPatchGroup = new("LunarFramework.Bootstrap");
 
     internal static event Action OnQuit;
@@ -24,12 +25,27 @@ internal class LunarRoot : MonoBehaviour
         var gameObject = new GameObject("LunarRoot");
         Instance = gameObject.AddComponent<LunarRoot>();
         DontDestroyOnLoad(gameObject);
-        
-        MainPatchGroup.AddPatches(typeof(LunarRoot).Assembly);
-        MainPatchGroup.Subscribe();
-        
-        BootstrapPatchGroup.AddPatches(typeof(LunarRoot).Assembly);
-        BootstrapPatchGroup.Subscribe();
+
+        try
+        {
+            MainPatchGroup.AddPatches(typeof(LunarRoot).Assembly);
+            MainPatchGroup.Subscribe();
+            
+            CompatPatchGroup.Subscribe();
+
+            BootstrapPatchGroup.AddPatches(typeof(LunarRoot).Assembly);
+            BootstrapPatchGroup.Subscribe();
+            
+            ModCompat.ApplyAll(typeof(LunarRoot).Assembly, Logger, CompatPatchGroup);
+        }
+        catch
+        {
+            MainPatchGroup?.UnsubscribeAll();
+            CompatPatchGroup?.UnsubscribeAll();
+            BootstrapPatchGroup?.UnsubscribeAll();
+            
+            throw;
+        }
     }
 
     internal static void RunCoroutine(IEnumerator coroutine)
