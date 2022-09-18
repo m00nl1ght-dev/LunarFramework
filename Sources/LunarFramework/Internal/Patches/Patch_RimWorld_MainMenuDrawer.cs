@@ -17,7 +17,7 @@ internal static class Patch_RimWorld_MainMenuDrawer
 
     [HarmonyPostfix]
     [HarmonyPatch(nameof(MainMenuDrawer.Init))]
-    private static void Init()
+    private static void Init() // TODO ensure that this is called with BetterLoading
     {
         OnMainMenuReady?.Invoke();
         OnMainMenuReady = null;

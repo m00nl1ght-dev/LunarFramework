@@ -9,8 +9,12 @@ namespace LunarFramework.Patching;
 
 public abstract class ModCompat
 {
-    public abstract string TargetAssembly { get; }
-    public abstract string DisplayName { get; }
+    public abstract string TargetAssemblyName { get; }
+    public virtual string DisplayName => TargetAssemblyName;
+    
+    public Assembly TargetAssembly { get; private set; }
+
+    private int _reflectiveAccessOperationIdx;
 
     public static void ApplyAll(LunarAPI lunarAPI, PatchGroup patchGroup)
     {
@@ -30,11 +34,12 @@ public abstract class ModCompat
                 try
                 {
                     var instance = (ModCompat) Activator.CreateInstance(type);
-                    if (assemblies.TryGetValue(instance.TargetAssembly, out var target))
+                    if (assemblies.TryGetValue(instance.TargetAssemblyName, out var target))
                     {
                         try
                         {
-                            instance.TryApply(patchGroup, target);
+                            instance.TargetAssembly = target;
+                            instance.TryApply(patchGroup);
                         }
                         catch (Exception e)
                         {
@@ -50,17 +55,31 @@ public abstract class ModCompat
         }
     }
 
-    protected void TryApply(PatchGroup patchGroup, Assembly assembly)
+    protected void TryApply(PatchGroup patchGroup)
     {
-        if (OnApply(assembly))
+        _reflectiveAccessOperationIdx = 0;
+        
+        if (OnApply())
         {
             if (GetType().GetCustomAttribute<HarmonyPatch>() != null)
             {
-                var subGroup = patchGroup.NewSubGroup(TargetAssembly);
+                var subGroup = patchGroup.NewSubGroup(TargetAssemblyName);
                 subGroup.AddPatch(GetType());
             }
         }
     }
 
-    protected virtual bool OnApply(Assembly assembly) => true;
+    protected virtual bool OnApply() => true;
+
+    public Type FindType(string name)
+    {
+        return Require(TargetAssembly.GetType(name));
+    }
+
+    public T Require<T>(T value)
+    {
+        if (value == null) throw new Exception("Reflection target with index " + _reflectiveAccessOperationIdx + " not found");
+        _reflectiveAccessOperationIdx++;
+        return value;
+    }
 }

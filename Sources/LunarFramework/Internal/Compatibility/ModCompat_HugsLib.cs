@@ -14,7 +14,7 @@ namespace LunarFramework.Internal.Compatibility;
 [HarmonyPatch]
 internal class ModCompat_HugsLib : ModCompat
 {
-    public override string TargetAssembly => "HugsLib";
+    public override string TargetAssemblyName => "HugsLib";
     public override string DisplayName => "HugsLib";
 
     [HarmonyPostfix]
