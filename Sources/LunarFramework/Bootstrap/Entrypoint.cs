@@ -440,8 +440,8 @@ internal static class Entrypoint
             "If you are using Steam, simply unsubscribe from '" + linkedMod.Name + "', then restart Steam and resubscribe. " + 
             "This will force Steam to redownload the mod files and update them to the latest version."
             : 
-            "You can download the latest version of '" + linkedMod.Name + "' from the project's GitHub Releases page. " +
-            "GitHub is the only official source for direct downloads, do not download it from any thrid-party websites.";
+            "You can download the latest version of from the project's GitHub Releases page. " +
+            "GitHub is the only official source for direct downloads, do not download it from any third-party websites.";
 
         void OpenModPageAction()
         {
