@@ -21,8 +21,6 @@ internal static class Entrypoint
     internal static readonly Dictionary<string, LunarMod> LunarMods = new();
     internal static readonly Dictionary<string, LunarComponent> LunarComponents = new();
 
-    internal static readonly List<string> CleanedUpOldAssemblies = new();
-
     internal static void RunBootstrap()
     {
         LunarRoot.Initialize();
@@ -42,13 +40,6 @@ internal static class Entrypoint
             }
         }
 
-        if (CleanedUpOldAssemblies.Count > 0)
-        {
-            Log.Warning("Successfully cleaned up old/obsolete mod files. The game will now restart for this to take effect.");
-            GenCommandLine.Restart();
-            return;
-        }
-        
         LoadComponents();
 
         foreach (var mod in LunarMods.Values.Where(m => m.LoadingState == LoadingState.Pending))
@@ -162,12 +153,15 @@ internal static class Entrypoint
                 }
             }
         }
-
-        if (!CleanUpOldAssemblies(mod))
+        
+        foreach (var file in ModContentPack.GetAllFilesForModPreserveOrder(mod.ModContentPack, "Assemblies/"))
         {
-            OnError(mod, "its files are damaged or incomplete.");
-            mod.LoadingState = LoadingState.Errored;
-            return;
+            if (!file.Item2.Name.Equals(LunarMod.LoaderAssemblyFileName))
+            {
+                OnError(mod, "invalid file: " + file.Item2.Name);
+                mod.LoadingState = LoadingState.Errored;
+                return;
+            }
         }
         
         foreach (var componentDef in mod.Manifest.Components)
@@ -211,34 +205,6 @@ internal static class Entrypoint
         }
     }
 
-    private static bool CleanUpOldAssemblies(LunarMod mod)
-    {
-        const string loaderAssemblyFileName = "LunarLoader.dll";
-        
-        var oldAssmeblies = ModContentPack.GetAllFilesForModPreserveOrder(mod.ModContentPack, "Assemblies/", e => e.ToLower() == ".dll")
-            .Select(f => f.Item2)
-            .Where(f => !f.Name.Equals(loaderAssemblyFileName))
-            .ToList();
-
-        if (oldAssmeblies.Count == 0) return true;
-
-        var backupDir = Path.Combine(mod.FrameworkDir, "Backup");
-        
-        if (Directory.Exists(backupDir)) return false;
-        Directory.CreateDirectory(backupDir);
-        
-        Log.Warning("Found leftover files from an old version of mod: " + mod.PackageId);
-
-        foreach (var oldAssmebly in oldAssmeblies)
-        {
-            var destFileName = Path.Combine(backupDir, oldAssmebly.Name);
-            File.Move(oldAssmebly.FullName, destFileName);
-            CleanedUpOldAssemblies.Add(oldAssmebly.FullName);
-        }
-
-        return true;
-    }
-    
     private static void LoadComponents()
     {
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -440,8 +406,7 @@ internal static class Entrypoint
             "If you are using Steam, simply unsubscribe from '" + linkedMod.Name + "', then restart Steam and resubscribe. " + 
             "This will force Steam to redownload the mod files and update them to the latest version."
             : 
-            "You can download the latest version of from the project's GitHub Releases page. " +
-            "GitHub is the only official source for direct downloads, do not download it from any third-party websites.";
+            "You can download the latest version from the project's GitHub Releases page.";
 
         void OpenModPageAction()
         {

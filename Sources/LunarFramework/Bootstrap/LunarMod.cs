@@ -6,11 +6,14 @@ namespace LunarFramework.Bootstrap;
 
 public class LunarMod
 {
+    public const string LoaderAssemblyFileName = "LunarLoader.dll";
+    public const string FrameworkAssemblyFileName = "LunarFramework.dll";
+    
     internal static string FrameworkDirIn(string loadDir) => Path.Combine(loadDir, "Lunar");
     internal static string AssembliesDirIn(string loadDir) => Path.Combine(loadDir, "Assemblies");
     internal static string ComponentsDirIn(string frameworkDir) => Path.Combine(frameworkDir, "Components");
     internal static string ManifestFileIn(string frameworkDir) => Path.Combine(frameworkDir, "Manifest.xml");
-    internal static string FrameworkAssemblyFileIn(string frameworkDir) => Path.Combine(ComponentsDirIn(frameworkDir), "LunarFramework.dll");
+    internal static string FrameworkAssemblyFileIn(string frameworkDir) => Path.Combine(ComponentsDirIn(frameworkDir), FrameworkAssemblyFileName);
     internal static string VersionFileIn(ModContentPack mcp) => Path.Combine(mcp.RootDir, "About", "Version.txt");
 
     internal static readonly Version InvalidVersion = new("0.0.0.0");
