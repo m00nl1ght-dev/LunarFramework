@@ -61,7 +61,7 @@ internal static class Entrypoint
             select new LunarMod(mcp, dir, LunarMods.Count)
         )
         {
-            LunarMods[mod.ModContentPack.PackageId] = mod;
+            LunarMods[mod.ModContentPack.ModMetaData.PackageIdNonUnique] = mod;
         }
     }
 
@@ -100,7 +100,7 @@ internal static class Entrypoint
             var minVersion = ParseVersion(mod.Manifest.MinGameVersion);
             if (VersionControl.CurrentVersion < minVersion)
             {
-                OnError(mod, "it requires RimWorld version " + minVersion + " or later.");
+                OnError(mod, "it requires RimWorld version " + minVersion + " or later.", false);
                 return;
             }
         }
@@ -110,7 +110,7 @@ internal static class Entrypoint
             foreach (var entry in mod.Manifest.Compatibility.Lunar)
             {
                 var packageId = entry.PackageId.ToLower();
-                var mcp = LoadedModManager.RunningMods.FirstOrDefault(m => m.PackageId == packageId);
+                var mcp = LoadedModManager.RunningMods.FirstOrDefault(m => m.ModMetaData.PackageIdNonUnique == packageId);
                 if (mcp != null)
                 {
                     var minVersion = ParseVersion(entry.MinVersion);
@@ -136,7 +136,7 @@ internal static class Entrypoint
             foreach (var entry in mod.Manifest.Compatibility.Refuse)
             {
                 var packageId = entry.PackageId.ToLower();
-                var mcp = LoadedModManager.RunningMods.FirstOrDefault(m => m.PackageId == packageId);
+                var mcp = LoadedModManager.RunningMods.FirstOrDefault(m => m.ModMetaData.PackageIdNonUnique == packageId);
                 if (mcp != null)
                 {
                     OnConflict(mod, mcp, null);

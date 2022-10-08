@@ -24,7 +24,7 @@ public class LunarMod
     public readonly int SortOrderIdx;
 
     public string Name => ModContentPack.Name;
-    public string PackageId => ModContentPack.PackageId;
+    public string PackageId => ModContentPack.ModMetaData.PackageIdNonUnique;
     
     public string VersionFile => VersionFileIn(ModContentPack);
     public string ManifestFile => ManifestFileIn(FrameworkDir);

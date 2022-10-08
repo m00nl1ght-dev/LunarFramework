@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
@@ -23,9 +24,12 @@ public abstract class ModCompat
 
     public static void ApplyAll(Assembly assembly, LogContext logContext, PatchGroup patchGroup)
     {
-        var assemblies = LoadedModManager.RunningModsListForReading
-            .SelectMany(m => m.assemblies.loadedAssemblies).Distinct()
-            .ToDictionary(a => a.GetName().Name);
+        var assemblies = new Dictionary<string, Assembly>();
+        
+        foreach (var loadedAssembly in LoadedModManager.RunningModsListForReading.SelectMany(m => m.assemblies.loadedAssemblies))
+        {
+            assemblies.AddDistinct(loadedAssembly.GetName().Name, loadedAssembly);
+        }
 
         foreach (var type in AccessTools.GetTypesFromAssembly(assembly))
         {
