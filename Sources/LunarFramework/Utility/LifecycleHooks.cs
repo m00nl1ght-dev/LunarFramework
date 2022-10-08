@@ -2,15 +2,12 @@ using System;
 using System.Collections;
 using LunarFramework.Internal;
 using LunarFramework.Internal.Patches;
-using LunarFramework.Patching;
 using UnityEngine;
 
 namespace LunarFramework.Utility;
 
 public class LifecycleHooks
 {
-    private static readonly PatchGroupSubscriber PatchGroupSubscriber = new(typeof(LifecycleHooks));
-
     internal static readonly LifecycleHooks InternalInstance = new();
     
     internal LifecycleHooks() {}

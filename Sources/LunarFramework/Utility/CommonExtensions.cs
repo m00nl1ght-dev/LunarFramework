@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LunarFramework.Bootstrap;
 using RimWorld;
 using Verse;
 
@@ -7,6 +8,11 @@ namespace LunarFramework.Utility;
 
 public static class CommonExtensions
 {
+    public static bool IsInitialized(this LunarAPI lunarAPI)
+    {
+        return lunarAPI != null && lunarAPI.Component.LoadingState == LoadingState.Initialized;
+    }
+
     public static string ToStringPretty(this Version version)
     {
         if (version.Major < 0 || version.Minor < 0) return version.ToString();

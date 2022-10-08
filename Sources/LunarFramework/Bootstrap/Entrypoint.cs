@@ -36,7 +36,6 @@ internal static class Entrypoint
             catch (Exception e)
             {
                 OnError(mod, "an unknown error occured", false, e);
-                mod.LoadingState = LoadingState.Errored;
             }
         }
 
@@ -71,14 +70,12 @@ internal static class Entrypoint
         if (!File.Exists(CheckFileFor(mod.ManifestFile)))
         {
             OnError(mod, "file is missing: " + CheckFileFor(mod.ManifestFile));
-            mod.LoadingState = LoadingState.Errored;
             return;
         }
         
         if (!CheckFile(mod.Version, mod.ManifestFile))
         {
             OnError(mod, "file is damaged or incomplete: " + mod.ManifestFile);
-            mod.LoadingState = LoadingState.Errored;
             return;
         }
         
@@ -89,14 +86,12 @@ internal static class Entrypoint
         catch (Exception e)
         {
             OnError(mod, "an error occured while reading its manifest file.", true, e);
-            mod.LoadingState = LoadingState.Errored;
             return;
         }
 
         if (!mod.IsModContentPackValid())
         {
             OnError(mod, "its metadata is damaged or incomplete.");
-            mod.LoadingState = LoadingState.Errored;
             return;
         }
 
@@ -106,7 +101,6 @@ internal static class Entrypoint
             if (VersionControl.CurrentVersion < minVersion)
             {
                 OnError(mod, "it requires RimWorld version " + minVersion + " or later.");
-                mod.LoadingState = LoadingState.Errored;
                 return;
             }
         }
@@ -125,14 +119,12 @@ internal static class Entrypoint
                         if (otherMod.Version < minVersion)
                         {
                             OnConflict(mod, mcp, minVersion);
-                            mod.LoadingState = LoadingState.Errored;
                             return;
                         }
                     }
                     else
                     {
                         OnConflict(mod, mcp, minVersion);
-                        mod.LoadingState = LoadingState.Errored;
                         return;
                     }
                 }
@@ -148,7 +140,6 @@ internal static class Entrypoint
                 if (mcp != null)
                 {
                     OnConflict(mod, mcp, null);
-                    mod.LoadingState = LoadingState.Errored;
                     return;
                 }
             }
@@ -159,7 +150,6 @@ internal static class Entrypoint
             if (!file.Item2.Name.Equals(LunarMod.LoaderAssemblyFileName))
             {
                 OnError(mod, "invalid file: " + file.Item2.Name);
-                mod.LoadingState = LoadingState.Errored;
                 return;
             }
         }
@@ -170,21 +160,18 @@ internal static class Entrypoint
             if (!File.Exists(assemblyFile))
             {
                 OnError(mod, "file is missing: " + assemblyFile);
-                mod.LoadingState = LoadingState.Errored;
                 return;
             }
             
             if (!File.Exists(CheckFileFor(assemblyFile)))
             {
                 OnError(mod, "file is missing: " + CheckFileFor(assemblyFile));
-                mod.LoadingState = LoadingState.Errored;
                 return;
             }
         
             if (!CheckFile(mod.Version, assemblyFile))
             {
                 OnError(mod, "file is damaged or incomplete: " + assemblyFile);
-                mod.LoadingState = LoadingState.Errored;
                 return;
             }
             
@@ -192,7 +179,6 @@ internal static class Entrypoint
             if (assemblyVersion == LunarMod.InvalidVersion)
             {
                 OnError(mod, "file has invalid version info: " + assemblyFile);
-                mod.LoadingState = LoadingState.Errored;
                 return;
             }
             
@@ -200,6 +186,7 @@ internal static class Entrypoint
             component ??= new LunarComponent(componentDef.AssemblyName, LunarComponents.Count);
             component.ProvidedVersionsInternal[mod] = assemblyVersion;
             if (componentDef.Aliases != null) component.AliasesInternal.AddRange(componentDef.Aliases);
+            if (componentDef.DependsOn != null) component.DependsOnInternal.AddRange(componentDef.DependsOn);
             if (!componentDef.AllowNonLunarSource) component.AllowNonLunarSource = false;
             LunarComponents[componentDef.AssemblyName] = component;
         }
@@ -208,6 +195,17 @@ internal static class Entrypoint
     private static void LoadComponents()
     {
         var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+        
+        foreach (var component in LunarComponents.Values)
+        {
+            foreach (var dependsOn in component.DependsOn)
+            {
+                if (LunarComponents.TryGetValue(dependsOn, out var depComponent))
+                {
+                    depComponent.DependentsInternal.Add(component);
+                }
+            }
+        }
 
         foreach (var component in LunarComponents.Values)
         {
@@ -221,7 +219,7 @@ internal static class Entrypoint
                     }
                     else
                     {
-                        OnError(component, "assembly '" + alias + "' is already loaded");
+                        OnError(component, "assembly '" + alias + "' is already loaded.");
                         break;
                     }
                 }
@@ -344,6 +342,8 @@ internal static class Entrypoint
 
     private static void OnError(LunarMod mod, string error, bool askForRedownload = true, Exception exception = null)
     {
+        mod.LoadingState = LoadingState.Errored;
+        
         string logMessage = "Failed to load mod '" + mod.ModContentPack?.Name + "', " + error;
         
         string popupMessage = "Failed to load mod '" + mod.ModContentPack?.Name + "' " +
@@ -364,15 +364,22 @@ internal static class Entrypoint
     private static void OnError(LunarComponent component, string error, Exception exception = null)
     {
         component.LoadingState = LoadingState.Errored;
+        
         foreach (var mod in component.ProvidingMods.Where(m => m.LoadingState != LoadingState.Errored))
         {
             OnError(mod, error, false, exception);
-            mod.LoadingState = LoadingState.Errored;
+        }
+        
+        foreach (var dependent in component.Dependents.Where(c => c.LoadingState != LoadingState.Errored))
+        {
+            OnError(dependent, error, exception);
         }
     }
     
     private static void OnConflict(LunarMod mod, ModContentPack other, Version minVersion)
     {
+        mod.LoadingState = LoadingState.Errored;
+        
         string message = minVersion != null
             ? 
             "Failed to load mod '" + mod.ModContentPack.Name + "' " +

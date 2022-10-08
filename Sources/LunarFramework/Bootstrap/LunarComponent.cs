@@ -20,6 +20,12 @@ public class LunarComponent : IComparable<LunarComponent>
 
     public IReadOnlyCollection<string> Aliases => AliasesInternal;
     internal readonly HashSet<string> AliasesInternal = new();
+    
+    public IReadOnlyCollection<string> DependsOn => DependsOnInternal;
+    internal readonly HashSet<string> DependsOnInternal = new();
+    
+    public IReadOnlyCollection<LunarComponent> Dependents => DependentsInternal;
+    internal readonly HashSet<LunarComponent> DependentsInternal = new();
 
     public bool AllowNonLunarSource { get; internal set; } = true;
     

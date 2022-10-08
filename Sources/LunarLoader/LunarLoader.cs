@@ -37,7 +37,7 @@ public class LunarLoader : Mod
     {
         try
         {
-            LoadFramework();
+            LoadFramework(mcp);
         }
         catch (Exception e)
         {
@@ -46,19 +46,19 @@ public class LunarLoader : Mod
         }
     }
 
-    private static void LoadFramework()
+    private static void LoadFramework(ModContentPack loaderMcp)
     {
         Log.ResetMessageCount();
 
-        var loadedFrameworkVersion = AppDomain.CurrentDomain.GetAssemblies()
+        var loadedFrameworkAssembly = AppDomain.CurrentDomain.GetAssemblies()
             .FirstOrDefault(a => a.GetName().Name == FrameworkAssemblyName);
         
         var loadedHarmonyAssembly = AppDomain.CurrentDomain.GetAssemblies()
             .FirstOrDefault(a => a.GetName().Name == HarmonyAssemblyName);
         
-        if (loadedFrameworkVersion != null)
+        if (loadedFrameworkAssembly != null)
         {
-            Log.Warning(LogPrefix + "Framework v" + loadedFrameworkVersion + " is already loaded.");
+            Log.Warning(LogPrefix + "Framework v" + loadedFrameworkAssembly.GetName().Version + " is already loaded.");
             return;
         }
 
@@ -138,16 +138,17 @@ public class LunarLoader : Mod
             }
             
             byte[] rawHarmonyAssembly = File.ReadAllBytes(harmonyAssemblyFile);
-            AppDomain.CurrentDomain.Load(rawHarmonyAssembly);
+            loadedHarmonyAssembly = AppDomain.CurrentDomain.Load(rawHarmonyAssembly);
+            frameworkProvider.ModContentPack.assemblies.loadedAssemblies.Add(loadedHarmonyAssembly);
         }
 
-        byte[] rawAssembly = File.ReadAllBytes(frameworkAssemblyFile);
-        var loadedAssembly = AppDomain.CurrentDomain.Load(rawAssembly);
+        byte[] rawFrameworkAssembly = File.ReadAllBytes(frameworkAssemblyFile);
+        loadedFrameworkAssembly = AppDomain.CurrentDomain.Load(rawFrameworkAssembly);
+        frameworkProvider.ModContentPack.assemblies.loadedAssemblies.Add(loadedFrameworkAssembly);
         
-        frameworkProvider.ModContentPack.assemblies.loadedAssemblies.Add(loadedAssembly);
         GenTypes.ClearCache();
 
-        var entrypoint = loadedAssembly.GetType(FrameworkEntrypointClass);
+        var entrypoint = loadedFrameworkAssembly.GetType(FrameworkEntrypointClass);
         var bootstrapMethod = entrypoint?.GetMethod(FrameworkEntrypointMethodName, BindingFlags.NonPublic | BindingFlags.Static);
         
         if (bootstrapMethod == null)

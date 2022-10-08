@@ -35,12 +35,12 @@ public class Manifest
     [Serializable]
     public struct CompatibilityList
     {
-        public List<CompatibilityEntry> Lunar;
-        public List<CompatibilityEntry> Refuse;
+        public List<Entry> Lunar;
+        public List<Entry> Refuse;
     }
     
     [Serializable]
-    public struct CompatibilityEntry
+    public struct Entry
     {
         public string PackageId;
         public string MinVersion;
@@ -52,5 +52,6 @@ public class Manifest
         public string AssemblyName { get; set; }
         public bool AllowNonLunarSource { get; set; }
         public List<string> Aliases { get; set; }
+        public List<string> DependsOn { get; set; }
     }
 }
