@@ -8,3 +8,6 @@ riderModule.iml
 *.txt
 *.pdb
 *.DotSettings.user
+
+/About/
+/Assemblies/
