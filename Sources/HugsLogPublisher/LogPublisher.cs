@@ -96,8 +96,7 @@ public class LogPublisher
             )
             {
                 OnUpload = OnPublishConfirmed,
-                OnCopy = CopyToClipboard,
-                OnOptionsToggled = () => { _publishOptions = new LogPublisherOptions(); }
+                OnCopy = CopyToClipboard
             });
         }
         else
@@ -190,6 +189,8 @@ public class LogPublisher
 
     private void OnPublishConfirmed()
     {
+        if (!_publishOptions.UseCustomOptions) _publishOptions = new LogPublisherOptions();
+        
         BeginUpload();
         ShowPublishDialog();
     }
