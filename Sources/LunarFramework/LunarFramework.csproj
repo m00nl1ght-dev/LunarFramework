@@ -97,6 +97,7 @@
     </Target>
     -->
     <PropertyGroup>
-        <PostBuildEvent>xcopy "$(TargetDir)$(TargetName).dll" "$(ProjectDir)..\..\..\Map Preview\1.4\Lunar\Components\" /F /Y</PostBuildEvent>
+        <PostBuildEvent>xcopy "$(TargetDir)$(TargetName).dll" "$(ProjectDir)..\..\..\Map Preview\1.4\Lunar\Components\" /F /Y
+xcopy "$(TargetDir)$(TargetName).dll" "$(ProjectDir)..\..\..\HugsLogPublisher\1.4\Lunar\Components\" /F /Y</PostBuildEvent>
     </PropertyGroup>
 </Project>

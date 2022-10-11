@@ -45,9 +45,7 @@ public class LunarMod
     internal bool IsModContentPackValid()
     {
         if (ModContentPack == null) return false;
-        if (Manifest.Name != null && !ModContentPack.Name.EqualsIgnoreCase(Manifest.Name)) return false;
         if (Manifest.PackageId != null && !ModContentPack.PackageId.EqualsIgnoreCase(Manifest.PackageId)) return false;
-        if (Manifest.Authors != null && !ModContentPack.ModMetaData.AuthorsString.EqualsIgnoreCase(Manifest.Authors)) return false;
         return true;
     }
     
