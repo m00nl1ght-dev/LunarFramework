@@ -89,12 +89,6 @@ internal static class Entrypoint
             return;
         }
 
-        if (!mod.IsModContentPackValid())
-        {
-            OnError(mod, "its metadata is damaged or incomplete.");
-            return;
-        }
-
         if (mod.Manifest.MinGameVersion != null)
         {
             var minVersion = ParseVersion(mod.Manifest.MinGameVersion);
@@ -304,6 +298,7 @@ internal static class Entrypoint
     
     internal static void OnPlayDataLoadFinished()
     {
+        LunarRoot.CreateInstance();
         LunarRoot.BootstrapPatchGroup.UnsubscribeAll();
 
         foreach (var component in LunarComponents.Values.OrderBy(m => m.SortOrderIdx))

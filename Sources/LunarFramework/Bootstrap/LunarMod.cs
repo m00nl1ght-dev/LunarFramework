@@ -42,13 +42,6 @@ public class LunarMod
         Version = ReadModVersion();
     }
 
-    internal bool IsModContentPackValid()
-    {
-        if (ModContentPack == null) return false;
-        if (Manifest.PackageId != null && !ModContentPack.PackageId.EqualsIgnoreCase(Manifest.PackageId)) return false;
-        return true;
-    }
-    
     private Version ReadModVersion()
     {
         try

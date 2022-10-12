@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using HarmonyLib;
 using LunarFramework.Patching;
 using RimWorld;
@@ -19,7 +20,6 @@ internal static class Patch_RimWorld_MainMenuDrawer
     [HarmonyPatch(nameof(MainMenuDrawer.Init))]
     private static void Init()
     {
-        OnMainMenuReady?.Invoke();
-        OnMainMenuReady = null;
+        Interlocked.Exchange(ref OnMainMenuReady, null)?.Invoke();
     }
 }

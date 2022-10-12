@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
+using LunarFramework.Internal;
 using LunarFramework.Utility;
 
 namespace LunarFramework.Patching;
@@ -173,7 +174,14 @@ public class PatchGroup : IPatchGroup
         
         if (!Active && _patchesApplied)
         {
-            LifecycleHooks.InternalInstance.DoOnce(DoUnpatch, _unpatchDelay);
+            if (LunarRoot.IsReady)
+            {
+                LifecycleHooks.InternalInstance.DoOnce(DoUnpatch, _unpatchDelay);
+            }
+            else
+            {
+                DoUnpatch();
+            }
         }
     }
 }

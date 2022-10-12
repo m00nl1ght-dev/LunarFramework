@@ -14,12 +14,19 @@ public class LifecycleHooks
 
     public void DoOnce(Action action, float delay = 0f)
     {
-        LunarRoot.RunCoroutine(DoOnceEnumerator(action, delay));
+        if (delay > 0f)
+        {
+            LunarRoot.RunCoroutine(DoOnceEnumerator(action, delay));
+        }
+        else
+        {
+            LunarRoot.DoOnceOnUpdate += action;
+        }
     }
 
     private IEnumerator DoOnceEnumerator(Action action, float delay)
     {
-        yield return delay <= 0f ? null : new WaitForSecondsRealtime(delay);
+        yield return new WaitForSecondsRealtime(delay);
         action.Invoke();
     }
     
