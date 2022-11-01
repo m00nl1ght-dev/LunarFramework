@@ -7,6 +7,8 @@ public struct LayoutParams
     public Directional<float> Margin;
     public float Spacing;
     
+    public float DefaultSize;
+    
     public bool Horizontal;
     public bool Reversed;
 

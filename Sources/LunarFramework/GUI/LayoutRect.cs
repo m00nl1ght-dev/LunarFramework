@@ -25,6 +25,11 @@ public class LayoutRect
         Current.Layout(rect, layoutParams);
     }
     
+    public void BeginAbs()
+    {
+        BeginAbs(Current.LayoutParams.DefaultSize);
+    }
+    
     public void BeginAbs(float size)
     {
         BeginAbs(size, new LayoutParams {Horizontal = !Current.LayoutParams.Horizontal});
@@ -44,6 +49,11 @@ public class LayoutRect
     public void BeginRel(float sizeRel, LayoutParams layoutParams)
     {
         BeginAbs(ToAbs(sizeRel), layoutParams);
+    }
+    
+    public Rect Abs()
+    {
+        return Abs(Current.LayoutParams.DefaultSize);
     }
 
     public Rect Abs(float size)
@@ -108,15 +118,16 @@ public class LayoutRect
         {
             if (size < 0) size = Mathf.Max(LayoutParams.SizeOf(Rect) - _occupiedSize, 0);
             
-            _occupiedSize += size + LayoutParams.Spacing;
-            
-            return LayoutParams.Horizontal
+            var next = LayoutParams.Horizontal
                 ? LayoutParams.Reversed
                     ? new Rect(Rect.x + Rect.width - _occupiedSize - size, Rect.y, size, Rect.height)
                     : new Rect(Rect.x + _occupiedSize, Rect.y, size, Rect.height)
                 : LayoutParams.Reversed
                     ? new Rect(Rect.x, Rect.y + Rect.height - _occupiedSize - size, Rect.width, size)
                     : new Rect(Rect.x, Rect.y + _occupiedSize, Rect.width, size);
+            
+            _occupiedSize += size + LayoutParams.Spacing;
+            return next;
         }
     }
 }
