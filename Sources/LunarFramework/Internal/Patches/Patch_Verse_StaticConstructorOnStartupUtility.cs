@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using HarmonyLib;
 using LunarFramework.Bootstrap;
 using LunarFramework.Patching;
@@ -11,12 +12,19 @@ using Verse;
 namespace LunarFramework.Internal.Patches;
 
 [PatchGroup("Bootstrap")]
-[HarmonyPatch(typeof(StaticConstructorOnStartupUtility))]
+[HarmonyPatch]
 internal static class Patch_Verse_StaticConstructorOnStartupUtility
 {
+    internal static MethodBase TargetMethodOverride;
+    
+    [HarmonyTargetMethod]
+    private static MethodBase TargetMethod()
+    {
+        return TargetMethodOverride ?? AccessTools.Method(typeof(StaticConstructorOnStartupUtility), "CallAll");
+    }
+    
     [HarmonyPostfix]
-    [HarmonyPatch(nameof(StaticConstructorOnStartupUtility.CallAll))]
-    private static void CallAll()
+    private static void LateInit()
     {
         try
         {

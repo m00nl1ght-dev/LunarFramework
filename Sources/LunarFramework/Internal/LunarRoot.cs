@@ -27,6 +27,8 @@ internal class LunarRoot : MonoBehaviour
     {
         try
         {
+            ModCompat.ApplyAll(typeof(LunarRoot).Assembly, Logger, CompatPatchGroup);
+            
             MainPatchGroup.AddPatches(typeof(LunarRoot).Assembly);
             MainPatchGroup.Subscribe();
             
@@ -34,8 +36,6 @@ internal class LunarRoot : MonoBehaviour
 
             BootstrapPatchGroup.AddPatches(typeof(LunarRoot).Assembly);
             BootstrapPatchGroup.Subscribe();
-            
-            ModCompat.ApplyAll(typeof(LunarRoot).Assembly, Logger, CompatPatchGroup);
         }
         catch
         {

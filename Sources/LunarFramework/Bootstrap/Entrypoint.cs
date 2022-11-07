@@ -296,6 +296,10 @@ internal static class Entrypoint
         }
     }
     
+    /// <summary>
+    /// Called after static constructors.
+    /// May be called multiple times, and must be able to handle that.
+    /// </summary>
     internal static void OnPlayDataLoadFinished()
     {
         LunarRoot.CreateInstance();
