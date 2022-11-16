@@ -1,6 +1,5 @@
 using System;
 using HarmonyLib;
-using Verse;
 
 namespace LunarFramework.Logging;
 
@@ -10,8 +9,8 @@ public static class LogPublisher
 
     static LogPublisher()
     {
-        ShowPublishPromptAction = TryReflect("HugsLib.Logs.LogPublisher", "ShowPublishPrompt");
-        ShowPublishPromptAction ??= TryReflect("HugsLogPublisher.LogPublisher", "ShowPublishPrompt");
+        ShowPublishPromptAction = TryReflectHugsLib();
+        ShowPublishPromptAction ??= TryReflectStandalone();
     }
     
     public static bool TryShowPublishPrompt()
@@ -21,17 +20,46 @@ public static class LogPublisher
         return true;
     }
 
-    private static Action TryReflect(string publisherType, string methodName)
+    private static Action TryReflectHugsLib()
     {
         try
         {
-            var type = GenTypes.GetTypeInAnyAssembly(publisherType);
+            var type = AccessTools.TypeByName("HugsLib.Logs.LogPublisher");
             if (type != null)
             {
-                var instance = Activator.CreateInstance(type);
+                var cType = AccessTools.TypeByName("HugsLib.HugsLibController");
+                var cField = AccessTools.Field(cType, "instance");
+                var cInstance = cField.GetValue(null);
+                var prop = AccessTools.Property(cType, "LogUploader");
+                var method = AccessTools.Method(type, "ShowPublishPrompt");
+                var instance = prop.GetValue(cInstance);
                 
-                var method = AccessTools.Method(type, methodName);
-                if (method != null)
+                if (method != null && instance != null)
+                {
+                    return () => method.Invoke(instance, Array.Empty<object>());
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // ignored
+        }
+
+        return null;
+    }
+
+    private static Action TryReflectStandalone()
+    {
+        try
+        {
+            var type = AccessTools.TypeByName("HugsLogPublisher.LogPublisher");
+            if (type != null)
+            {
+                var field = AccessTools.Field(type, "Instance");
+                var method = AccessTools.Method(type, "ShowPublishPrompt");
+                var instance = field.GetValue(null);
+
+                if (method != null && instance != null)
                 {
                     return () => method.Invoke(instance, Array.Empty<object>());
                 }
