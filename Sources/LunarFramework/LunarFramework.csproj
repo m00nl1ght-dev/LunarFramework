@@ -71,6 +71,7 @@
         <Compile Include="Bootstrap\Manifest.cs" />
         <Compile Include="GUI\LayoutParams.cs" />
         <Compile Include="GUI\LayoutRect.cs" />
+        <Compile Include="GUI\LunarGUI.cs" />
         <Compile Include="Internal\Compatibility\ModCompat_BetterLoading.cs" />
         <Compile Include="Internal\Compatibility\ModCompat_HugsLib.cs" />
         <Compile Include="Internal\LunarRoot.cs" />
@@ -88,6 +89,7 @@
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="Utility\CommonExtensions.cs" />
         <Compile Include="Utility\LifecycleHooks.cs" />
+        <Compile Include="Utility\RandInstance.cs" />
         <Compile Include="Utility\Rot6.cs" />
         <Compile Include="Utility\StructRot4.cs" />
     </ItemGroup>
