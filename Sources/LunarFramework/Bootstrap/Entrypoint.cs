@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using HarmonyLib;
@@ -273,19 +274,35 @@ internal static class Entrypoint
             provider.ModContentPack.assemblies.loadedAssemblies.Add(assembly);
             GenTypes.ClearCache();
             
-            foreach (var modType in types.Where(t => t.IsSubclassOf(typeof(Mod)) && !t.IsAbstract))
+            foreach (var modType in types)
             {
-                try
+                if (modType.HasAttribute<LunarComponentEntrypoint>())
                 {
-                    if (!runningModClasses.ContainsKey(modType))
+                    try
                     {
-                        runningModClasses[modType] = (Mod) Activator.CreateInstance(modType, provider.ModContentPack);
+                        RuntimeHelpers.RunClassConstructor(modType.TypeHandle);
                     }
-                }
-                catch (Exception e)
+                    catch (Exception e)
+                    {
+                        OnError(component, "error in component entrypoint '" + modType.FullName + "'", e);
+                        break;
+                    }
+                } 
+                
+                if (modType.IsSubclassOf(typeof(Mod)) && !modType.IsAbstract)
                 {
-                    OnError(component, "error in '" + modType.FullName + "'", e);
-                    break;
+                    try
+                    {
+                        if (!runningModClasses.ContainsKey(modType))
+                        {
+                            runningModClasses[modType] = (Mod)Activator.CreateInstance(modType, provider.ModContentPack);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        OnError(component, "error in '" + modType.FullName + "'", e);
+                        break;
+                    }
                 }
             }
 

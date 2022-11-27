@@ -64,3 +64,6 @@ public class LunarAPI
         LifecycleHooks = new LifecycleHooks();
     }
 }
+
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+public class LunarComponentEntrypoint : Attribute {}
