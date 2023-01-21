@@ -8,7 +8,10 @@ public class LayoutRect
     internal readonly Node Root = new(null);
     
     internal Node Current;
-    
+
+    public bool Horizontal => Current.LayoutParams.Horizontal;
+    public float OccupiedSpace => Current.OccupiedSpaceTrimmed;
+
     public LayoutRect(LunarAPI lunarAPI)
     {
         LunarAPI = lunarAPI;
@@ -93,7 +96,8 @@ public class LayoutRect
         internal Node Child => _child ??= new Node(this);
         private Node _child;
 
-        private float _occupiedSize;
+        public float OccupiedSpace { get; private set; }
+        public float OccupiedSpaceTrimmed => Mathf.Max(0, OccupiedSpace - LayoutParams.Spacing);
         
         public static implicit operator Rect(Node node) => node?.Rect ?? default;
 
@@ -106,7 +110,7 @@ public class LayoutRect
         {
             Rect = layoutParams.ApplyMargin(rect);
             LayoutParams = layoutParams;
-            _occupiedSize = 0;
+            OccupiedSpace = 0;
         }
 
         internal void LayoutChild(float size, LayoutParams layoutParamsForChild)
@@ -116,17 +120,17 @@ public class LayoutRect
         
         internal Rect NextRect(float size)
         {
-            if (size < 0) size = Mathf.Max(LayoutParams.SizeOf(Rect) - _occupiedSize, 0);
+            if (size < 0) size = Mathf.Max(LayoutParams.SizeOf(Rect) - OccupiedSpace, 0);
             
             var next = LayoutParams.Horizontal
                 ? LayoutParams.Reversed
-                    ? new Rect(Rect.x + Rect.width - _occupiedSize - size, Rect.y, size, Rect.height)
-                    : new Rect(Rect.x + _occupiedSize, Rect.y, size, Rect.height)
+                    ? new Rect(Rect.x + Rect.width - OccupiedSpace - size, Rect.y, size, Rect.height)
+                    : new Rect(Rect.x + OccupiedSpace, Rect.y, size, Rect.height)
                 : LayoutParams.Reversed
-                    ? new Rect(Rect.x, Rect.y + Rect.height - _occupiedSize - size, Rect.width, size)
-                    : new Rect(Rect.x, Rect.y + _occupiedSize, Rect.width, size);
+                    ? new Rect(Rect.x, Rect.y + Rect.height - OccupiedSpace - size, Rect.width, size)
+                    : new Rect(Rect.x, Rect.y + OccupiedSpace, Rect.width, size);
             
-            _occupiedSize += size + LayoutParams.Spacing;
+            OccupiedSpace += size + LayoutParams.Spacing;
             return next;
         }
     }
