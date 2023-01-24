@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 // ReSharper disable CompareOfFloatsByEqualityOperator
 
@@ -12,35 +14,6 @@ public static class LunarGUI
 {
     private static readonly object ColorBufferTex = new Texture2D(1, 1);
     private static Texture2D ColorBuffer => (Texture2D) ColorBufferTex;
-
-    private static bool _wasChanged;
-    private static bool _wasEnabled = true;
-
-    public static void PushChanged(bool changed = false)
-    {
-        _wasChanged = UnityEngine.GUI.changed;
-        UnityEngine.GUI.changed = changed;
-    }
-    
-    public static bool PopChanged()
-    {
-        var changed = UnityEngine.GUI.changed;
-        UnityEngine.GUI.changed = changed || _wasChanged;
-        return changed;
-    }
-    
-    public static void PushEnabled(bool enabled)
-    {
-        _wasEnabled = UnityEngine.GUI.enabled;
-        UnityEngine.GUI.enabled = enabled;
-    }
-    
-    public static bool PopEnabled()
-    {
-        var enabled = UnityEngine.GUI.enabled;
-        UnityEngine.GUI.enabled = _wasEnabled;
-        return enabled;
-    }
 
     public static void BeginScrollView(Rect frameRect, ref Rect viewRect, ref Vector2 scrollPosition)
     {
@@ -59,9 +32,16 @@ public static class LunarGUI
     
     public static bool Button(Rect rect, string label, string tooltip = null)
     {
-        tooltip ??= label;
-        TooltipHandler.TipRegion(rect, tooltip);
+        if (LanguageDatabase.activeLanguage != LanguageDatabase.defaultLanguage) tooltip ??= label;
+        if (tooltip != null) TooltipHandler.TipRegion(rect, tooltip);
         return Widgets.ButtonText(rect, label);
+    }
+    
+    public static void Checkbox(Rect rect, ref bool value, bool paintable = false)
+    {
+        var before = value;
+        Widgets.Checkbox(rect.x, rect.y, ref value, rect.height, !UnityEngine.GUI.enabled, paintable);
+        if (value != before) UnityEngine.GUI.changed = true;
     }
 
     public static void Checkbox(LayoutRect layout, ref bool value, string label, string tooltip = null)
@@ -69,27 +49,23 @@ public static class LunarGUI
 
     public static void Checkbox(Rect rect, ref bool value, string label, string tooltip = null)
     {
-        tooltip ??= label;
-        if (Mouse.IsOver(rect)) Widgets.DrawHighlight(rect);
-        TooltipHandler.TipRegion(rect, tooltip);
-        Widgets.CheckboxLabeled(rect, label, ref value);
+        if (LanguageDatabase.activeLanguage != LanguageDatabase.defaultLanguage) tooltip ??= label;
+        HighlightOnHover(rect);
+        if (tooltip != null) TooltipHandler.TipRegion(rect, tooltip);
+        Widgets.CheckboxLabeled(rect, label, ref value, !UnityEngine.GUI.enabled);
     }
 
     public static void TextField(LayoutRect layout, ref string value)
         => TextField(layout.Abs(layout.Horizontal ? -1f : 28f), ref value);
     
     public static void TextField(Rect rect, ref string value)
-    {
-        value = Widgets.TextField(rect, value);
-    }
+        => value = Widgets.TextField(rect, value);
 
     public static void IntField(LayoutRect layout, ref int value, ref string editBuffer, int min, int max)
         => IntField(layout.Abs(layout.Horizontal ? -1f : 28f), ref value, ref editBuffer, min, max);
     
     public static void IntField(Rect rect, ref int value, ref string editBuffer, int min, int max)
-    {
-        Widgets.TextFieldNumeric(rect, ref value, ref editBuffer, min, max);
-    }
+        => Widgets.TextFieldNumeric(rect, ref value, ref editBuffer, min, max);
 
     public static void Slider(LayoutRect layout, ref float value, float min, float max)
         => Slider(layout.Abs(layout.Horizontal ? -1f : 22f), ref value, min, max);
@@ -162,8 +138,9 @@ public static class LunarGUI
         textFunc ??= o => o.ToString();
         if (Widgets.ButtonText(rect, textFunc.Invoke(value)))
         {
-            var options = potentialValues.Select(e => 
-                new FloatMenuOption(textFunc.Invoke(e), () => { action(e); UnityEngine.GUI.changed = true; })).ToList();
+            var options = potentialValues
+                .Select(e => new FloatMenuOption(textFunc.Invoke(e), () => { action(e); UnityEngine.GUI.changed = true; }))
+                .ToList();
             Find.WindowStack.Add(new FloatMenu(options));
         }
     }
@@ -173,8 +150,65 @@ public static class LunarGUI
     
     public static void Dropdown<T>(Rect rect, T value, Action<T> action, string translationKeyPrefix = null) where T : Enum
     {
-        Dropdown(rect, value, typeof(T).GetEnumValues().Cast<T>().ToList(), action, 
-            translationKeyPrefix == null ? null : e => (translationKeyPrefix + "." + e).Translate());
+        Dropdown(
+            rect, value, typeof(T).GetEnumValues().Cast<T>().ToList(), action, 
+            translationKeyPrefix == null ? null : e => (translationKeyPrefix + "." + e).Translate()
+        );
+    }
+
+    public static void ToggleTableRow<T>(LayoutRect layout, T item, bool inverted, string label, params List<T>[] toggles)
+    {
+        layout.BeginAbs(Text.LineHeight, new LayoutParams { Horizontal = true, Reversed = true });
+
+        HighlightOnHover(layout);
+
+        foreach (var toggle in toggles.Reverse())
+        {
+            layout.PushChanged();
+            layout.PushEnabled(toggle != null);
+
+            var enabled = toggle != null && (toggle.Contains(item) ^ inverted);
+            Checkbox(layout.Abs(Text.LineHeight), ref enabled, true);
+
+            layout.PopEnabled();
+            if (layout.PopChanged())
+            {
+                if (enabled) toggle?.Remove(item); 
+                else toggle?.Add(item);
+            }
+
+            layout.Abs(5f);
+        }
+
+        var labelRect = layout.Abs(-1f);
+        Label(labelRect, label);
+
+        if (UnityEngine.GUI.enabled && Widgets.ButtonInvisible(labelRect))
+        {
+            var anyWereOn = false;
+            foreach (var toggle in toggles) if (toggle != null && toggle.Remove(item)) anyWereOn = true;
+            if (!anyWereOn) foreach (var toggle in toggles) toggle?.Add(item);
+            PlayToggleSound(!anyWereOn);
+            UnityEngine.GUI.changed = true;
+        }
+
+        layout.End();
+    }
+
+    public static void HighlightOnHover(Rect rect)
+    {
+        if (Mouse.IsOver(rect)) Widgets.DrawHighlight(rect);
+    }
+
+    public static void PlayToggleSound(bool on)
+    {
+        (on ? SoundDefOf.Checkbox_TurnedOn : SoundDefOf.Checkbox_TurnedOff).PlayOneShotOnCamera();
+    }
+
+    public static void SeparatorLine(LayoutRect layout, float height = 1f)
+    {
+        var sep = layout.Abs(height);
+        Widgets.DrawLineHorizontal(sep.x, sep.y, sep.width);
     }
     
     public static void DrawQuad(Rect quad, Color color)

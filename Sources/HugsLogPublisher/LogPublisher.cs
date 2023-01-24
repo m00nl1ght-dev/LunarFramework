@@ -16,7 +16,7 @@ namespace HugsLogPublisher;
 /// <summary>
 /// Collects the game logs and loaded mods and posts the information on GitHub as a gist.
 /// </summary>
-[StaticConstructorOnStartup]
+[LunarComponentEntrypoint]
 public class LogPublisher
 {
     internal static readonly LunarAPI LunarAPI = LunarAPI.Create("HugsLogPublisher", Init);

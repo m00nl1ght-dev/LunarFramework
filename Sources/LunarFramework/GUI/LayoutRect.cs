@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace LunarFramework.GUI;
@@ -11,6 +12,9 @@ public class LayoutRect
 
     public bool Horizontal => Current.LayoutParams.Horizontal;
     public float OccupiedSpace => Current.OccupiedSpaceTrimmed;
+    
+    private readonly Stack<bool> _changedStack = new();
+    private readonly Stack<bool> _enabledStack = new();
 
     public LayoutRect(LunarAPI lunarAPI)
     {
@@ -78,6 +82,32 @@ public class LayoutRect
         }
 
         Current = Current.Parent;
+    }
+
+    public void PushChanged(bool changed = false)
+    {
+        _changedStack.Push(UnityEngine.GUI.changed);
+        UnityEngine.GUI.changed = changed;
+    }
+    
+    public bool PopChanged()
+    {
+        var changed = UnityEngine.GUI.changed;
+        UnityEngine.GUI.changed = changed || _changedStack.Pop();
+        return changed;
+    }
+    
+    public void PushEnabled(bool enabled)
+    {
+        _enabledStack.Push(UnityEngine.GUI.enabled);
+        UnityEngine.GUI.enabled = enabled;
+    }
+    
+    public bool PopEnabled()
+    {
+        var enabled = UnityEngine.GUI.enabled;
+        UnityEngine.GUI.enabled = _enabledStack.Pop();
+        return enabled;
     }
 
     public static implicit operator Rect(LayoutRect layout) => layout.Current?.Rect ?? default;
