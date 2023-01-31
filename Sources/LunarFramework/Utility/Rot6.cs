@@ -10,14 +10,14 @@ public struct Rot6 : IEquatable<Rot6>
 
     public bool IsValid => _index < 6;
 
-    public static Rot6 Invalid => new() {_index = 66};
+    public static Rot6 Invalid => new() { _index = 66 };
 
     public int Index
     {
         get => _index;
         set => _index = (byte) (value >= 0 ? value % 6 : value % 6 + 6);
     }
-    
+
     public float Angle
     {
         get => _angle;
@@ -46,7 +46,7 @@ public struct Rot6 : IEquatable<Rot6>
             };
         }
     }
-    
+
     public void Rotate(RotationDirection rotDir)
     {
         if (rotDir == RotationDirection.Clockwise)
@@ -67,12 +67,12 @@ public struct Rot6 : IEquatable<Rot6>
         rot6.Rotate(rotDir);
         return rot6;
     }
-    
+
     public Rot6 RotatedCW()
     {
         return Rotated(RotationDirection.Clockwise);
     }
-    
+
     public Rot6 RotatedCCW()
     {
         return Rotated(RotationDirection.Counterclockwise);
@@ -117,7 +117,7 @@ public struct Rot6 : IEquatable<Rot6>
     {
         return MidPoint(a.Angle, b.Angle);
     }
-    
+
     public static float MidPoint(float a, float b)
     {
         if (a > b) (a, b) = (b, a);

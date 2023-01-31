@@ -52,12 +52,12 @@ internal class Dialog_PublishLogs : Window
         var titleRect = new Rect(inRect.x, inRect.y, inRect.width, 40);
         Widgets.Label(titleRect, "HugsLogPublisher.publisherTitle".Translate());
         Text.Font = GameFont.Small;
-        
+
         var labelEntry = _statusMessages[_publisher.Status];
         var statusLabelText = labelEntry.RequiresEllipsis
             ? labelEntry.LabelKey.Translate(GenText.MarchingEllipsis(Time.realtimeSinceStartup))
             : labelEntry.LabelKey.Translate();
-        
+
         if (_publisher.Status == LogPublisher.PublisherStatus.Error)
         {
             statusLabelText = string.Format(statusLabelText, _publisher.ErrorMessage);
@@ -84,7 +84,7 @@ internal class Dialog_PublishLogs : Window
             Text.Anchor = prevAnchor;
             Text.Font = GameFont.Small;
             var copyBtnRect = new Rect(inRect.width - _copyButtonSize.x, urlAreaRect.y, _copyButtonSize.x, _copyButtonSize.y);
-            
+
             if (Widgets.ButtonText(copyBtnRect, "HugsLogPublisher.copy".Translate()))
             {
                 HugsLibUtility.CopyToClipboard(_publisher.ResultUrl);
@@ -134,8 +134,8 @@ internal class Dialog_PublishLogs : Window
 
         public StatusLabelEntry(string labelKey, bool requiresEllipsis)
         {
-            this.LabelKey = labelKey;
-            this.RequiresEllipsis = requiresEllipsis;
+            LabelKey = labelKey;
+            RequiresEllipsis = requiresEllipsis;
         }
     }
 }

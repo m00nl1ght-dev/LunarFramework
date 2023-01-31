@@ -10,14 +10,14 @@ namespace LunarFramework.Internal;
 internal class LunarRoot : MonoBehaviour
 {
     internal static LogContext Logger => new IngameLogContext(typeof(LunarRoot), "LunarFramework", LunarAPI.FrameworkVersion);
-    
+
     internal static LunarRoot Instance { get; private set; }
     internal static bool IsReady => Instance != null;
 
     internal static readonly PatchGroup MainPatchGroup = new("LunarFramework.Main");
     internal static readonly PatchGroup CompatPatchGroup = new("LunarFramework.Compat");
     internal static readonly PatchGroup BootstrapPatchGroup = new("LunarFramework.Bootstrap");
-    
+
     internal static event Action DoOnceOnUpdate;
 
     internal static event Action DoOnGUI;
@@ -28,10 +28,10 @@ internal class LunarRoot : MonoBehaviour
         try
         {
             ModCompat.ApplyAll(typeof(LunarRoot).Assembly, Logger, CompatPatchGroup);
-            
+
             MainPatchGroup.AddPatches(typeof(LunarRoot).Assembly);
             MainPatchGroup.Subscribe();
-            
+
             CompatPatchGroup.Subscribe();
 
             BootstrapPatchGroup.AddPatches(typeof(LunarRoot).Assembly);
@@ -42,11 +42,11 @@ internal class LunarRoot : MonoBehaviour
             MainPatchGroup?.UnsubscribeAll();
             CompatPatchGroup?.UnsubscribeAll();
             BootstrapPatchGroup?.UnsubscribeAll();
-            
+
             throw;
         }
     }
-    
+
     internal static void CreateInstance()
     {
         if (Instance != null) return;
@@ -59,7 +59,7 @@ internal class LunarRoot : MonoBehaviour
     {
         DoOnceOnUpdate += () => Instance.StartCoroutine(coroutine);
     }
-    
+
     private void Update()
     {
         Interlocked.Exchange(ref DoOnceOnUpdate, null)?.Invoke();

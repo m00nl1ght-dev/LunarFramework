@@ -12,7 +12,7 @@ public abstract class ModCompat
 {
     public abstract string TargetAssemblyName { get; }
     public virtual string DisplayName => TargetAssemblyName;
-    
+
     public Assembly TargetAssembly { get; private set; }
 
     private int _reflectiveAccessOperationIdx;
@@ -25,7 +25,7 @@ public abstract class ModCompat
     public static void ApplyAll(Assembly assembly, LogContext logContext, PatchGroup patchGroup)
     {
         var assemblies = new Dictionary<string, Assembly>();
-        
+
         foreach (var loadedAssembly in LoadedModManager.RunningModsListForReading.SelectMany(m => m.assemblies.loadedAssemblies))
         {
             assemblies.AddDistinct(loadedAssembly.GetName().Name, loadedAssembly);
@@ -62,7 +62,7 @@ public abstract class ModCompat
     protected void TryApply(PatchGroup patchGroup)
     {
         _reflectiveAccessOperationIdx = 0;
-        
+
         if (OnApply())
         {
             if (GetType().GetCustomAttribute<HarmonyPatch>() != null)

@@ -7,7 +7,7 @@ namespace LunarFramework.Patching;
 public interface IPatchGroup
 {
     public string Name { get; }
-    
+
     public bool Active { get; }
 
     public IEnumerable<Type> OwnPatchClasses { get; }

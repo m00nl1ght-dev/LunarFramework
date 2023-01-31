@@ -7,12 +7,12 @@ public class LayoutRect
 {
     internal readonly LunarAPI LunarAPI;
     internal readonly Node Root = new(null);
-    
+
     internal Node Current;
 
     public bool Horizontal => Current.LayoutParams.Horizontal;
     public float OccupiedSpace => Current.OccupiedSpaceTrimmed;
-    
+
     private readonly Stack<bool> _changedStack = new();
     private readonly Stack<bool> _enabledStack = new();
 
@@ -31,15 +31,15 @@ public class LayoutRect
         Current = Root;
         Current.Layout(rect, layoutParams);
     }
-    
+
     public void BeginAbs()
     {
         BeginAbs(Current.LayoutParams.DefaultSize);
     }
-    
+
     public void BeginAbs(float size)
     {
-        BeginAbs(size, new LayoutParams {Horizontal = !Current.LayoutParams.Horizontal});
+        BeginAbs(size, new LayoutParams { Horizontal = !Current.LayoutParams.Horizontal });
     }
 
     public void BeginAbs(float size, LayoutParams layoutParams)
@@ -47,17 +47,17 @@ public class LayoutRect
         Current.LayoutChild(size, layoutParams);
         Current = Current.Child;
     }
-    
+
     public void BeginRel(float sizeRel)
     {
-        BeginRel(sizeRel, new LayoutParams {Horizontal = !Current.LayoutParams.Horizontal});
+        BeginRel(sizeRel, new LayoutParams { Horizontal = !Current.LayoutParams.Horizontal });
     }
-    
+
     public void BeginRel(float sizeRel, LayoutParams layoutParams)
     {
         BeginAbs(ToAbs(sizeRel), layoutParams);
     }
-    
+
     public Rect Abs()
     {
         return Abs(Current.LayoutParams.DefaultSize);
@@ -67,7 +67,7 @@ public class LayoutRect
     {
         return Current.NextRect(size);
     }
-    
+
     public Rect Rel(float sizeRel)
     {
         return Abs(ToAbs(sizeRel));
@@ -89,20 +89,20 @@ public class LayoutRect
         _changedStack.Push(UnityEngine.GUI.changed);
         UnityEngine.GUI.changed = changed;
     }
-    
+
     public bool PopChanged()
     {
         var changed = UnityEngine.GUI.changed;
         UnityEngine.GUI.changed = changed || _changedStack.Pop();
         return changed;
     }
-    
+
     public void PushEnabled(bool enabled)
     {
         _enabledStack.Push(UnityEngine.GUI.enabled);
         UnityEngine.GUI.enabled = enabled;
     }
-    
+
     public bool PopEnabled()
     {
         var enabled = UnityEngine.GUI.enabled;
@@ -116,7 +116,7 @@ public class LayoutRect
     {
         return sizeRel < 0 ? -1 : Mathf.Min(sizeRel, 1) * Current.LayoutParams.SizeOf(Current);
     }
-    
+
     internal class Node
     {
         internal Rect Rect;
@@ -128,7 +128,7 @@ public class LayoutRect
 
         public float OccupiedSpace { get; private set; }
         public float OccupiedSpaceTrimmed => Mathf.Max(0, OccupiedSpace - LayoutParams.Spacing);
-        
+
         public static implicit operator Rect(Node node) => node?.Rect ?? default;
 
         internal Node(Node parent)
@@ -147,11 +147,11 @@ public class LayoutRect
         {
             Child.Layout(NextRect(size), layoutParamsForChild);
         }
-        
+
         internal Rect NextRect(float size)
         {
             if (size < 0) size = Mathf.Max(LayoutParams.SizeOf(Rect) - OccupiedSpace, 0);
-            
+
             var next = LayoutParams.Horizontal
                 ? LayoutParams.Reversed
                     ? new Rect(Rect.x + Rect.width - OccupiedSpace - size, Rect.y, size, Rect.height)
@@ -159,7 +159,7 @@ public class LayoutRect
                 : LayoutParams.Reversed
                     ? new Rect(Rect.x, Rect.y + Rect.height - OccupiedSpace - size, Rect.width, size)
                     : new Rect(Rect.x, Rect.y + OccupiedSpace, Rect.width, size);
-            
+
             OccupiedSpace += size + LayoutParams.Spacing;
             return next;
         }

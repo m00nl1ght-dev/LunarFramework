@@ -8,7 +8,7 @@ public class LunarMod
 {
     public const string LoaderAssemblyFileName = "LunarLoader.dll";
     public const string FrameworkAssemblyFileName = "LunarFramework.dll";
-    
+
     internal static string FrameworkDirIn(string loadDir) => Path.Combine(loadDir, "Lunar");
     internal static string AssembliesDirIn(string loadDir) => Path.Combine(loadDir, "Assemblies");
     internal static string ComponentsDirIn(string frameworkDir) => Path.Combine(frameworkDir, "Components");
@@ -17,7 +17,7 @@ public class LunarMod
     internal static string VersionFileIn(ModContentPack mcp) => Path.Combine(mcp.RootDir, "About", "Version.txt");
 
     internal static readonly Version InvalidVersion = new("0.0.0.0");
-    
+
     public readonly ModContentPack ModContentPack;
     public readonly string FrameworkDir;
     public readonly Version Version;
@@ -25,7 +25,7 @@ public class LunarMod
 
     public string Name => ModContentPack.Name;
     public string PackageId => ModContentPack.ModMetaData.PackageIdNonUnique;
-    
+
     public string VersionFile => VersionFileIn(ModContentPack);
     public string ManifestFile => ManifestFileIn(FrameworkDir);
     public string ComponentsDir => ComponentsDirIn(FrameworkDir);

@@ -111,7 +111,8 @@ internal class Dialog_PublishLogsOptions : Window
         }
     }
 
-    private bool AddOptionCheckbox(Listing_Standard listing, string labelKey, string tooltipKey, bool value,
+    private bool AddOptionCheckbox(
+        Listing_Standard listing, string labelKey, string tooltipKey, bool value,
         out bool changed, float indent = 0f)
     {
         bool valueAfter = value;

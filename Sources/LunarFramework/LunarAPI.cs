@@ -12,12 +12,12 @@ namespace LunarFramework;
 public class LunarAPI
 {
     public static Version FrameworkVersion => typeof(LunarAPI).Assembly.GetName().Version;
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static LunarAPI Create(string displayName, Action initAction = null, Action cleanupAction = null)
     {
         var assembly = new StackTrace().GetFrame(1)?.GetMethod()?.ReflectedType?.Assembly;
-        
+
         if (assembly == null)
         {
             LunarRoot.Logger.Error("Failed to load '" + displayName + "' because its origin component could not be determined.");
@@ -66,4 +66,4 @@ public class LunarAPI
 }
 
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-public class LunarComponentEntrypoint : Attribute {}
+public class LunarComponentEntrypoint : Attribute { }

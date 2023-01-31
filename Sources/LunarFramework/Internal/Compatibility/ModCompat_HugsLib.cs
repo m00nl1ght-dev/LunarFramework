@@ -4,11 +4,6 @@ using HarmonyLib;
 using LunarFramework.Patching;
 using Verse;
 
-// ReSharper disable RedundantAssignment
-// ReSharper disable UnusedType.Global
-// ReSharper disable UnusedMember.Local
-// ReSharper disable InconsistentNaming
-
 namespace LunarFramework.Internal.Compatibility;
 
 [HarmonyPatch]
@@ -23,7 +18,7 @@ internal class ModCompat_HugsLib : ModCompat
     {
         if (__result != null) return;
         const string lunarComponentsFolderName = "Lunar/Components";
-        var expectedAssemblyFileName = $"{assemblyName}.dll"; 
+        var expectedAssemblyFileName = $"{assemblyName}.dll";
         var lunarComponentFolderFiles = ModContentPack.GetAllFilesForMod(contentPack, lunarComponentsFolderName);
         __result = lunarComponentFolderFiles.Values.FirstOrDefault(f => f.Name == expectedAssemblyFileName);
     }

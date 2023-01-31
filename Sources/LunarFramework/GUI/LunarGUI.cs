@@ -21,22 +21,22 @@ public static class LunarGUI
         viewRect = new(0f, 0f, frameRect.width - (fitsView ? 0f : 25f), Mathf.Max(viewRect.height, frameRect.height));
         Widgets.BeginScrollView(frameRect, ref scrollPosition, viewRect);
     }
-    
+
     public static void EndScrollView()
     {
         Widgets.EndScrollView();
     }
-    
-    public static bool Button(LayoutRect layout, string label, string tooltip = null) 
+
+    public static bool Button(LayoutRect layout, string label, string tooltip = null)
         => Button(layout.Abs(layout.Horizontal ? -1f : 30f), label, tooltip);
-    
+
     public static bool Button(Rect rect, string label, string tooltip = null)
     {
         if (LanguageDatabase.activeLanguage != LanguageDatabase.defaultLanguage) tooltip ??= label;
         if (tooltip != null) TooltipHandler.TipRegion(rect, tooltip);
         return Widgets.ButtonText(rect, label);
     }
-    
+
     public static void Checkbox(Rect rect, ref bool value, bool paintable = false)
     {
         var before = value;
@@ -57,19 +57,19 @@ public static class LunarGUI
 
     public static void TextField(LayoutRect layout, ref string value)
         => TextField(layout.Abs(layout.Horizontal ? -1f : 28f), ref value);
-    
+
     public static void TextField(Rect rect, ref string value)
         => value = Widgets.TextField(rect, value);
 
     public static void IntField(LayoutRect layout, ref int value, ref string editBuffer, int min, int max)
         => IntField(layout.Abs(layout.Horizontal ? -1f : 28f), ref value, ref editBuffer, min, max);
-    
+
     public static void IntField(Rect rect, ref int value, ref string editBuffer, int min, int max)
         => Widgets.TextFieldNumeric(rect, ref value, ref editBuffer, min, max);
 
     public static void Slider(LayoutRect layout, ref float value, float min, float max)
         => Slider(layout.Abs(layout.Horizontal ? -1f : 22f), ref value, min, max);
-    
+
     public static void Slider(Rect rect, ref float value, float min, float max)
     {
         var newValue = Widgets.HorizontalSlider_NewTemp(rect, value, min, max);
@@ -79,7 +79,7 @@ public static class LunarGUI
 
     public static void Slider(LayoutRect layout, ref int value, int min, int max)
         => Slider(layout.Abs(layout.Horizontal ? -1f : 22f), ref value, min, max);
-    
+
     public static void Slider(Rect rect, ref int value, int min, int max)
     {
         float intval = value;
@@ -89,7 +89,7 @@ public static class LunarGUI
 
     public static void RangeSlider(LayoutRect layout, ref FloatRange floatRange, float min, float max)
         => RangeSlider(layout.Abs(layout.Horizontal ? -1f : 28f), ref floatRange, min, max);
-    
+
     public static void RangeSlider(Rect rect, ref FloatRange floatRange, float min, float max)
     {
         var before = floatRange;
@@ -99,13 +99,13 @@ public static class LunarGUI
 
     public static void Label(LayoutRect layout, string label, string tooltip = null)
         => Label(layout.Abs(layout.Horizontal ? Text.CalcSize(label).x : Text.CalcSize(label).y), label, tooltip);
-    
+
     public static void Label(Rect rect, string label, string tooltip = null)
     {
         if (tooltip != null) TooltipHandler.TipRegion(rect, tooltip);
         Widgets.Label(rect, label);
     }
-    
+
     public static void LabelCentered(LayoutRect layout, string labelCenter, string tooltip = null)
     {
         var labelCenterSize = Text.CalcSize(labelCenter);
@@ -115,7 +115,7 @@ public static class LunarGUI
         if (tooltip != null) TooltipHandler.TipRegion(rect, tooltip);
         Widgets.Label(centerRect, labelCenter);
     }
-    
+
     public static void LabelDouble(LayoutRect layout, string labelLeft, string labelCenter, string tooltip = null)
     {
         var labelLeftSize = Text.CalcSize(labelLeft);
@@ -129,7 +129,7 @@ public static class LunarGUI
         Widgets.Label(leftRect, labelLeft);
         Widgets.Label(centerRect, labelCenter);
     }
-    
+
     public static void Dropdown<T>(LayoutRect layout, T value, List<T> potentialValues, Action<T> action, Func<T, string> textFunc = null)
         => Dropdown(layout.Abs(layout.Horizontal ? -1f : 28f), value, potentialValues, action, textFunc);
 
@@ -139,7 +139,11 @@ public static class LunarGUI
         if (Widgets.ButtonText(rect, textFunc.Invoke(value)))
         {
             var options = potentialValues
-                .Select(e => new FloatMenuOption(textFunc.Invoke(e), () => { action(e); UnityEngine.GUI.changed = true; }))
+                .Select(e => new FloatMenuOption(textFunc.Invoke(e), () =>
+                {
+                    action(e);
+                    UnityEngine.GUI.changed = true;
+                }))
                 .ToList();
             Find.WindowStack.Add(new FloatMenu(options));
         }
@@ -147,11 +151,11 @@ public static class LunarGUI
 
     public static void Dropdown<T>(LayoutRect layout, T value, Action<T> action, string translationKeyPrefix = null) where T : Enum
         => Dropdown(layout.Abs(layout.Horizontal ? -1f : 28f), value, action, translationKeyPrefix);
-    
+
     public static void Dropdown<T>(Rect rect, T value, Action<T> action, string translationKeyPrefix = null) where T : Enum
     {
         Dropdown(
-            rect, value, typeof(T).GetEnumValues().Cast<T>().ToList(), action, 
+            rect, value, typeof(T).GetEnumValues().Cast<T>().ToList(), action,
             translationKeyPrefix == null ? null : e => (translationKeyPrefix + "." + e).Translate()
         );
     }
@@ -173,7 +177,7 @@ public static class LunarGUI
             layout.PopEnabled();
             if (layout.PopChanged())
             {
-                if (enabled) toggle?.Remove(item); 
+                if (enabled) toggle?.Remove(item);
                 else toggle?.Add(item);
             }
 
@@ -186,8 +190,12 @@ public static class LunarGUI
         if (UnityEngine.GUI.enabled && Widgets.ButtonInvisible(labelRect))
         {
             var anyWereOn = false;
-            foreach (var toggle in toggles) if (toggle != null && toggle.Remove(item)) anyWereOn = true;
-            if (!anyWereOn) foreach (var toggle in toggles) toggle?.Add(item);
+            foreach (var toggle in toggles)
+                if (toggle != null && toggle.Remove(item))
+                    anyWereOn = true;
+            if (!anyWereOn)
+                foreach (var toggle in toggles)
+                    toggle?.Add(item);
             PlayToggleSound(!anyWereOn);
             UnityEngine.GUI.changed = true;
         }
@@ -210,7 +218,7 @@ public static class LunarGUI
         var sep = layout.Abs(height);
         Widgets.DrawLineHorizontal(sep.x, sep.y, sep.width);
     }
-    
+
     public static void DrawQuad(Rect quad, Color color)
     {
         ColorBuffer.wrapMode = TextureWrapMode.Repeat;

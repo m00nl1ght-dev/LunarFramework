@@ -19,7 +19,7 @@ public struct StructRot4<T>
         South = val;
         West = val;
     }
-    
+
     public T this[Rot4 rot]
     {
         get

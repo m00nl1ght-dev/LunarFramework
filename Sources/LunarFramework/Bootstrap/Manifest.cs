@@ -11,20 +11,20 @@ public class Manifest
     public string Name { get; set; }
     public string PackageId { get; set; }
     public string Authors { get; set; }
-    
+
     public string MinGameVersion { get; set; }
 
     public CompatibilityList Compatibility { get; set; }
 
     public List<Component> Components { get; set; } = new();
-    
+
     internal static Manifest ReadFromFile(string file)
     {
         var serializer = new XmlSerializer(typeof(Manifest));
         using var reader = new StreamReader(file);
         return (Manifest) serializer.Deserialize(reader);
     }
-    
+
     internal static void WriteToFile(Manifest manifest, string file)
     {
         var serializer = new XmlSerializer(typeof(Manifest));
@@ -38,7 +38,7 @@ public class Manifest
         public List<Entry> Lunar;
         public List<Entry> Refuse;
     }
-    
+
     [Serializable]
     public struct Entry
     {

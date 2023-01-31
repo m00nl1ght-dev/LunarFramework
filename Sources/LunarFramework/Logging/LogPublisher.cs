@@ -12,7 +12,7 @@ public static class LogPublisher
         ShowPublishPromptAction = TryReflectHugsLib();
         ShowPublishPromptAction ??= TryReflectStandalone();
     }
-    
+
     public static bool TryShowPublishPrompt()
     {
         if (ShowPublishPromptAction == null) return false;
@@ -33,7 +33,7 @@ public static class LogPublisher
                 var prop = AccessTools.Property(cType, "LogUploader");
                 var method = AccessTools.Method(type, "ShowPublishPrompt");
                 var instance = prop.GetValue(cInstance);
-                
+
                 if (method != null && instance != null)
                 {
                     return () => method.Invoke(instance, Array.Empty<object>());

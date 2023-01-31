@@ -9,8 +9,8 @@ namespace LunarFramework.Utility;
 public class LifecycleHooks
 {
     internal static readonly LifecycleHooks InternalInstance = new();
-    
-    internal LifecycleHooks() {}
+
+    internal LifecycleHooks() { }
 
     public void DoOnce(Action action, float delay = 0f)
     {
@@ -29,7 +29,7 @@ public class LifecycleHooks
         yield return new WaitForSecondsRealtime(delay);
         action.Invoke();
     }
-    
+
     public void DoWhile(Func<bool> action, float delay = 0f)
     {
         LunarRoot.RunCoroutine(DoWhileEnumerator(action, delay));
@@ -49,17 +49,17 @@ public class LifecycleHooks
     {
         LunarRoot.RunCoroutine(enumerator);
     }
-    
+
     public void DoOnceOnMainMenu(Action action)
     {
         Patch_RimWorld_MainMenuDrawer.OnMainMenuReady += action;
     }
-    
+
     public void DoOnceOnShutdown(Action action)
     {
         LunarRoot.DoOnQuit += action;
     }
-    
+
     public void DoOnGUI(Action action)
     {
         LunarRoot.DoOnGUI += action;

@@ -6,9 +6,9 @@ public struct LayoutParams
 {
     public Directional<float> Margin;
     public float Spacing;
-    
+
     public float DefaultSize;
-    
+
     public bool Horizontal;
     public bool Reversed;
 
@@ -17,9 +17,9 @@ public struct LayoutParams
     public Rect ApplyMargin(Rect rect)
     {
         return new Rect(
-            rect.x + Margin.Left, 
-            rect.y + Margin.Top, 
-            rect.width - Margin.Left - Margin.Right, 
+            rect.x + Margin.Left,
+            rect.y + Margin.Top,
+            rect.width - Margin.Left - Margin.Right,
             rect.height - Margin.Top - Margin.Bottom
         );
     }
@@ -39,7 +39,7 @@ public struct Directional<T>
         Left = value;
         Right = value;
     }
-    
+
     public Directional(T tbValue, T lrValue)
     {
         Top = tbValue;
@@ -47,7 +47,7 @@ public struct Directional<T>
         Left = lrValue;
         Right = lrValue;
     }
-    
+
     public Directional(T tValue, T bValue, T lValue, T rValue)
     {
         Top = tValue;

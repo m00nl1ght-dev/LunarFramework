@@ -20,7 +20,7 @@ public class PatchGroup : IPatchGroup
     private readonly HashSet<IPatchGroup> _ownSubGroups = new();
 
     private readonly HashSet<PatchGroupSubscriber> _subscribers = new();
-    
+
     private readonly float _unpatchDelay;
 
     private readonly Harmony _harmony;
@@ -51,7 +51,7 @@ public class PatchGroup : IPatchGroup
             }
         }
     }
-    
+
     public void AddPatches(Assembly assembly)
     {
         var assemblyName = assembly.GetName().Name;
@@ -86,7 +86,7 @@ public class PatchGroup : IPatchGroup
     public void Subscribe(PatchGroupSubscriber subscriber = null, bool selfOnly = false)
     {
         subscriber ??= PatchGroupSubscriber.Generic;
-        
+
         if (_subscribers.Add(subscriber))
         {
             TryPatch();
@@ -100,11 +100,11 @@ public class PatchGroup : IPatchGroup
             }
         }
     }
-    
+
     public void Unsubscribe(PatchGroupSubscriber subscriber = null, bool selfOnly = false)
     {
         subscriber ??= PatchGroupSubscriber.Generic;
-        
+
         if (_subscribers.Remove(subscriber))
         {
             if (_subscribers.Count == 0)
@@ -121,12 +121,12 @@ public class PatchGroup : IPatchGroup
             }
         }
     }
-    
+
     public void UnsubscribeAll(bool selfOnly = false)
     {
         _subscribers.Clear();
         TryUnpatch();
-        
+
         if (!selfOnly)
         {
             foreach (var group in _ownSubGroups)
@@ -147,7 +147,7 @@ public class PatchGroup : IPatchGroup
             }
         }
     }
-    
+
     private void TryPatch(Type patchClass)
     {
         try
@@ -160,7 +160,7 @@ public class PatchGroup : IPatchGroup
             throw;
         }
     }
-    
+
     private void TryUnpatch()
     {
         void DoUnpatch()
@@ -171,7 +171,7 @@ public class PatchGroup : IPatchGroup
                 _harmony.UnpatchAll(_harmony.Id);
             }
         }
-        
+
         if (!Active && _patchesApplied)
         {
             if (LunarRoot.IsReady)

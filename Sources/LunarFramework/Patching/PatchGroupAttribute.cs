@@ -6,7 +6,7 @@ namespace LunarFramework.Patching;
 public class PatchGroupAttribute : Attribute
 {
     public readonly string Name;
-    
+
     public PatchGroupAttribute(string name)
     {
         Name = name;

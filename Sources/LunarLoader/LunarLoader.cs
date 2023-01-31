@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -17,22 +16,21 @@ public class LunarLoader : Mod
     private const string FrameworkAssemblyName = "LunarFramework";
     private const string FrameworkEntrypointClass = "LunarFramework.Bootstrap.Entrypoint";
     private const string FrameworkEntrypointMethodName = "RunBootstrap";
-    
+
     private const string HarmonyAssemblyName = "0Harmony";
     private const string HarmonyAssemblyFileName = "HarmonyLib";
-    
+
     private static string VersionFileIn(ModContentPack mcp) => Path.Combine(mcp.RootDir, "About", "Version.txt");
     private static string HarmonyAssemblyFileIn(string dir) => Path.Combine(dir, "Components", HarmonyAssemblyFileName + ".dll");
     private static string FrameworkAssemblyFileIn(string dir) => Path.Combine(dir, "Components", FrameworkAssemblyName + ".dll");
-    private static string CheckFileFor(string file) { int l; return ((l = file.LastIndexOf('.')) < 0 ? file : file.Substring(0, l)) + ".lfc"; }
 
     private static readonly Version RequiredHarmonyVersion = new("2.2.2.0");
     private static readonly Version InvalidVersion = new("0.0.0.0");
 
     private static Version LoaderVersion => typeof(LunarLoader).Assembly.GetName().Version;
-    
+
     private static string LogPrefix => "[Lunar v" + LoaderVersion + "] ";
-    
+
     public LunarLoader(ModContentPack mcp) : base(mcp)
     {
         try
@@ -52,10 +50,10 @@ public class LunarLoader : Mod
 
         var loadedFrameworkAssembly = AppDomain.CurrentDomain.GetAssemblies()
             .FirstOrDefault(a => a.GetName().Name == FrameworkAssemblyName);
-        
+
         var loadedHarmonyAssembly = AppDomain.CurrentDomain.GetAssemblies()
             .FirstOrDefault(a => a.GetName().Name == HarmonyAssemblyName);
-        
+
         if (loadedFrameworkAssembly != null)
         {
             Log.Warning(LogPrefix + "Framework v" + loadedFrameworkAssembly.GetName().Version + " is already loaded.");
@@ -63,15 +61,15 @@ public class LunarLoader : Mod
         }
 
         var lunarMods = (
-            from mcp in LoadedModManager.RunningMods
-            let dir = mcp.foldersToLoadDescendingOrder
-                .Select(lf => Path.Combine(lf, FrameworkDirName))
-                .FirstOrDefault(Directory.Exists)
-            where dir != null
-            let assemblyFile = FrameworkAssemblyFileIn(dir) 
-            where File.Exists(assemblyFile) 
-            let frameworkVersion = GetAssemblyVersion(assemblyFile) 
-            select new ModInfo(mcp, dir, frameworkVersion))
+                from mcp in LoadedModManager.RunningMods
+                let dir = mcp.foldersToLoadDescendingOrder
+                    .Select(lf => Path.Combine(lf, FrameworkDirName))
+                    .FirstOrDefault(Directory.Exists)
+                where dir != null
+                let assemblyFile = FrameworkAssemblyFileIn(dir)
+                where File.Exists(assemblyFile)
+                let frameworkVersion = GetAssemblyVersion(assemblyFile)
+                select new ModInfo(mcp, dir, frameworkVersion))
             .ToList();
 
         if (lunarMods.Count == 0) return; // no need to load framework if no mods use it
@@ -80,13 +78,13 @@ public class LunarLoader : Mod
         var frameworkAssemblyFile = FrameworkAssemblyFileIn(frameworkProvider.FrameworkDir);
         var frameworkAssemblyCheckFile = CheckFileFor(frameworkAssemblyFile);
         var frameworkProviderModVersion = GetModVersion(frameworkProvider.ModContentPack);
-        
+
         if (frameworkProvider.FrameworkVersion == InvalidVersion)
         {
             LogError(frameworkProvider.ModContentPack, "no valid framework found.");
             return;
         }
-        
+
         if (frameworkProviderModVersion == InvalidVersion)
         {
             LogError(frameworkProvider.ModContentPack, "version info is invalid or missing.");
@@ -98,7 +96,7 @@ public class LunarLoader : Mod
             LogError(frameworkProvider.ModContentPack, "file is missing: " + frameworkAssemblyCheckFile);
             return;
         }
-        
+
         if (!CheckFile(frameworkProviderModVersion, frameworkAssemblyFile))
         {
             LogError(frameworkProvider.ModContentPack, "file is damaged or incomplete: " + frameworkAssemblyFile);
@@ -118,25 +116,25 @@ public class LunarLoader : Mod
         {
             var harmonyAssemblyFile = HarmonyAssemblyFileIn(frameworkProvider.FrameworkDir);
             var harmonyAssemblyCheckFile = CheckFileFor(harmonyAssemblyFile);
-            
+
             if (!File.Exists(harmonyAssemblyFile))
             {
                 LogError(frameworkProvider.ModContentPack, "file is missing: " + harmonyAssemblyFile);
                 return;
             }
-            
+
             if (!File.Exists(harmonyAssemblyCheckFile))
             {
                 LogError(frameworkProvider.ModContentPack, "file is missing: " + harmonyAssemblyCheckFile);
                 return;
             }
-        
+
             if (!CheckFile(frameworkProviderModVersion, harmonyAssemblyFile))
             {
                 LogError(frameworkProvider.ModContentPack, "file is damaged or incomplete: " + harmonyAssemblyFile);
                 return;
             }
-            
+
             byte[] rawHarmonyAssembly = File.ReadAllBytes(harmonyAssemblyFile);
             loadedHarmonyAssembly = AppDomain.CurrentDomain.Load(rawHarmonyAssembly);
             frameworkProvider.ModContentPack.assemblies.loadedAssemblies.Add(loadedHarmonyAssembly);
@@ -145,19 +143,25 @@ public class LunarLoader : Mod
         byte[] rawFrameworkAssembly = File.ReadAllBytes(frameworkAssemblyFile);
         loadedFrameworkAssembly = AppDomain.CurrentDomain.Load(rawFrameworkAssembly);
         frameworkProvider.ModContentPack.assemblies.loadedAssemblies.Add(loadedFrameworkAssembly);
-        
+
         GenTypes.ClearCache();
 
         var entrypoint = loadedFrameworkAssembly.GetType(FrameworkEntrypointClass);
         var bootstrapMethod = entrypoint?.GetMethod(FrameworkEntrypointMethodName, BindingFlags.NonPublic | BindingFlags.Static);
-        
+
         if (bootstrapMethod == null)
         {
             LogError(frameworkProvider.ModContentPack, $"framework v{frameworkProvider.FrameworkVersion} entrypoint is missing.");
             return;
         }
-        
+
         bootstrapMethod.Invoke(null, null);
+    }
+
+    private static string CheckFileFor(string file)
+    {
+        int index = file.LastIndexOf('.');
+        return (index < 0 ? file : file.Substring(0, index)) + ".lfc";
     }
 
     private static Version GetModVersion(ModContentPack mcp)
@@ -172,7 +176,7 @@ public class LunarLoader : Mod
             return InvalidVersion;
         }
     }
-    
+
     private static Version GetAssemblyVersion(string file)
     {
         try
@@ -186,19 +190,18 @@ public class LunarLoader : Mod
             return InvalidVersion;
         }
     }
-    
-    [SuppressMessage("ReSharper", "LoopCanBeConvertedToQuery")]
+
     private static bool CheckFile(Version version, string file)
     {
         try
         {
             using var md5 = MD5.Create();
             using var stream = File.OpenRead(file);
-            
+
             byte[] aBytes = md5.ComputeHash(stream);
             byte[] vBytes = md5.ComputeHash(Encoding.ASCII.GetBytes(version.ToString()));
             byte[] fBytes = File.ReadAllBytes(CheckFileFor(file));
-            
+
             if (aBytes.Length != fBytes.Length) return false;
             for (var i = 0; i < aBytes.Length; i++)
             {

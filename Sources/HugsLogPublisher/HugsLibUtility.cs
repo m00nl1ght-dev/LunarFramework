@@ -18,18 +18,18 @@ internal static class HugsLibUtility
     /// <summary>
     /// Returns true if the left or right Alt keys are currently pressed.
     /// </summary>
-    public static bool AltIsHeld => 
-        Input.GetKey(KeyCode.LeftAlt) || 
+    public static bool AltIsHeld =>
+        Input.GetKey(KeyCode.LeftAlt) ||
         Input.GetKey(KeyCode.RightAlt);
 
     /// <summary>
     /// Returns true if the left or right Control keys are currently pressed.
     /// Mac command keys are supported, as well.
     /// </summary>
-    public static bool ControlIsHeld => 
-        Input.GetKey(KeyCode.LeftControl) || 
-        Input.GetKey(KeyCode.RightControl) || 
-        Input.GetKey(KeyCode.LeftCommand) || 
+    public static bool ControlIsHeld =>
+        Input.GetKey(KeyCode.LeftControl) ||
+        Input.GetKey(KeyCode.RightControl) ||
+        Input.GetKey(KeyCode.LeftCommand) ||
         Input.GetKey(KeyCode.RightCommand);
 
     /// <summary>
@@ -115,14 +115,15 @@ internal static class HugsLibUtility
     /// <param name="onFailure">Called with the error message in case of a network error or if server replied with status other than 200.</param>
     /// <param name="successStatus">The expected status code in the response for the request to be considered successful</param>
     /// <param name="timeout">How long to wait before aborting the request</param>
-    internal static void AwaitUnityWebResponse(UnityWebRequest request, Action<string> onSuccess, Action<Exception>
-        onFailure, HttpStatusCode successStatus = HttpStatusCode.OK, float timeout = 30f)
+    internal static void AwaitUnityWebResponse(
+        UnityWebRequest request, Action<string> onSuccess, Action<Exception> onFailure,
+        HttpStatusCode successStatus = HttpStatusCode.OK, float timeout = 30f)
     {
         /* iTodo: scrap whole method, revert to System.Net.WebClient
         .NET version has been updated and SSL should work again */
-#pragma warning disable 618
+        #pragma warning disable 618
         request.Send();
-#pragma warning restore 618
+        #pragma warning restore 618
         var timeoutTime = Time.unscaledTime + timeout;
 
         bool PollingAction()
@@ -150,7 +151,7 @@ internal static class HugsLibUtility
                     throw new Exception(request.error);
                 }
 
-                var status = (HttpStatusCode)request.responseCode;
+                var status = (HttpStatusCode) request.responseCode;
                 if (status != successStatus)
                 {
                     throw new Exception($"{request.url} replied with {status}: {request.downloadHandler.text}");
@@ -182,15 +183,16 @@ internal static class HugsLibUtility
         if (methodInfo.DeclaringType == null) return methodInfo.Name;
         return methodInfo.DeclaringType.FullName + "." + methodInfo.Name;
     }
-    
-    internal static string ToSemanticString(this Version v, string nullFallback = "unknown") {
+
+    internal static string ToSemanticString(this Version v, string nullFallback = "unknown")
+    {
         if (v == null) return nullFallback;
         // System.Version parts: Major.Minor.Build.Revision
-        return v.Build < 0 
-            ? $"{v.ToString(2)}.0" 
+        return v.Build < 0
+            ? $"{v.ToString(2)}.0"
             : v.ToString(v.Revision <= 0 ? 3 : 4);
     }
-    
+
     /// <summary>
     /// Tries to find the file handle for a given mod assembly name.
     /// </summary>
@@ -198,25 +200,30 @@ internal static class HugsLibUtility
     /// <param name="assemblyName">The <see cref="AssemblyName.Name"/> of the assembly</param>
     /// <param name="contentPack">The content pack the assembly was presumably loaded from</param>
     /// <returns>Returns null if the file is not found</returns>
-    public static FileInfo GetModAssemblyFileInfo(string assemblyName, [NotNull] ModContentPack contentPack) {
+    public static FileInfo GetModAssemblyFileInfo(string assemblyName, [NotNull] ModContentPack contentPack)
+    {
         if (contentPack == null) throw new ArgumentNullException(nameof(contentPack));
         const string assembliesFolderName = "Assemblies";
         const string lunarComponentsFolderName = "Lunar/Components";
-        var expectedAssemblyFileName = $"{assemblyName}.dll"; 
+        var expectedAssemblyFileName = $"{assemblyName}.dll";
         var modAssemblyFolderFiles = ModContentPack.GetAllFilesForMod(contentPack, assembliesFolderName);
         var fromAssemblyFolder = modAssemblyFolderFiles.Values.FirstOrDefault(f => f.Name == expectedAssemblyFileName);
         if (fromAssemblyFolder != null) return fromAssemblyFolder;
         var lunarComponentFolderFiles = ModContentPack.GetAllFilesForMod(contentPack, lunarComponentsFolderName);
         return lunarComponentFolderFiles.Values.FirstOrDefault(f => f.Name == expectedAssemblyFileName);
     }
-    
+
     /// <summary>
     /// Same as <see cref="GetModAssemblyFileInfo"/> but suppresses all exceptions.
     /// </summary>
-    public static FileInfo TryGetModAssemblyFileInfo(string assemblyName, ModContentPack modPack) {
-        try {
+    public static FileInfo TryGetModAssemblyFileInfo(string assemblyName, ModContentPack modPack)
+    {
+        try
+        {
             return GetModAssemblyFileInfo(assemblyName, modPack);
-        } catch (Exception) {
+        }
+        catch (Exception)
+        {
             return null;
         }
     }

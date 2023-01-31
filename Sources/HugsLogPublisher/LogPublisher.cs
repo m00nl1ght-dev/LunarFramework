@@ -27,19 +27,22 @@ public class LogPublisher
     {
         LunarAPI.LifecycleHooks.DoOnGUI(OnGUI);
     }
-    
+
     private static void OnGUI()
     {
         if (Event.current.type != EventType.KeyDown) return;
-        
+
         if (Input.GetKey(KeyCode.F12) && HugsLibUtility.ControlIsHeld)
         {
-            if (HugsLibUtility.AltIsHeld) {
+            if (HugsLibUtility.AltIsHeld)
+            {
                 Instance.CopyToClipboard();
-            } else {
+            }
+            else
+            {
                 Instance.ShowPublishPrompt();
             }
-            
+
             Event.current.Use();
         }
     }
@@ -65,7 +68,7 @@ public class LogPublisher
     private const int MaxLogLineCount = 10000;
     private const float PublishRequestTimeout = 90f;
 
-    private readonly string _gitHubAuthToken = 
+    private readonly string _gitHubAuthToken =
         "6b69be56e8d8eaf678377c992a3d0c9b6da917e0".Reverse().Join(""); // GitHub will revoke any tokens committed
 
     private readonly Regex _uploadResponseUrlMatch = new Regex("\"html_url\":\"(https://gist\\.github\\.com/\\w+)\"");
@@ -86,7 +89,7 @@ public class LogPublisher
             Log.Error("LogPublisher is not available!");
             return;
         }
-        
+
         if (PublisherIsReady())
         {
             Find.WindowStack.Add(new Dialog_PublishLogsOptions(
@@ -136,13 +139,13 @@ public class LogPublisher
     public void BeginUpload()
     {
         if (!PublisherIsReady()) return;
-        
+
         if (LunarAPI == null)
         {
             Log.Error("LogPublisher is not available!");
             return;
         }
-        
+
         Status = PublisherStatus.Uploading;
         ErrorMessage = null;
         _userAborted = false;
@@ -190,7 +193,7 @@ public class LogPublisher
     private void OnPublishConfirmed()
     {
         if (!_publishOptions.UseCustomOptions) _publishOptions = new LogPublisherOptions();
-        
+
         BeginUpload();
         ShowPublishDialog();
     }
@@ -480,10 +483,8 @@ public class LogPublisher
                 " MB",
                 "\n");
         }
-        else
-        {
-            return sectionTitle + "(hidden, use publishing options to include)\n";
-        }
+
+        return sectionTitle + "(hidden, use publishing options to include)\n";
     }
 
     private string ListActiveMods()
