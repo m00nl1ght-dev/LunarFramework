@@ -15,6 +15,9 @@ public abstract class ModCompat
 
     public Assembly TargetAssembly { get; private set; }
 
+    public ModContentPack ModContentPack => LoadedModManager.RunningMods
+        .FirstOrDefault(mcp => mcp.assemblies.loadedAssemblies.Contains(TargetAssembly));
+
     private int _reflectiveAccessOperationIdx;
 
     public static void ApplyAll(LunarAPI lunarAPI, PatchGroup patchGroup)
