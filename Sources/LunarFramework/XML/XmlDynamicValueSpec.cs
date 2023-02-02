@@ -1,90 +1,71 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 
 namespace LunarFramework.XML;
 
 public class XmlDynamicValueSpec<T, TC>
 {
-    public XmlDynamicValueSpec<T, TC> BaseSpec { get; }
-
     public XmlDynamicValueSpec<bool, TC> ConditionSpec { get; set; }
 
-    public XmlDynamicValueSupplierSpec<T, TC> DefaultSupplierSpec { get; set; }
-    public XmlDynamicValueModifierSpec<T, TC> DefaultModifierSpec { get; set; }
+    public Registry<XmlDynamicValueSupplierSpec<T, TC>> SupplierSpecs { get; } = new();
+    public Registry<XmlDynamicValueModifierSpec<T, TC>> ModifierSpecs { get; } = new();
 
-    public string SupplierNameAttribute { get; set; } = "supplier";
-    public string ModifierNameAttribute { get; set; } = "operation";
-
-    public IReadOnlyDictionary<string, XmlDynamicValueSupplierSpec<T, TC>> SupplierSpecs => _supplierSpecs;
-    private readonly Dictionary<string, XmlDynamicValueSupplierSpec<T, TC>> _supplierSpecs = new();
-
-    public IReadOnlyDictionary<string, XmlDynamicValueModifierSpec<T, TC>> ModifierSpecs => _modifierSpecs;
-    private readonly Dictionary<string, XmlDynamicValueModifierSpec<T, TC>> _modifierSpecs = new();
-
-    public XmlDynamicValueSpec(XmlDynamicValueSpec<T, TC> baseSpec = null)
+    public void InheritFrom(XmlDynamicValueSpec<T, TC> other)
     {
-        if (baseSpec != null)
-        {
-            BaseSpec = baseSpec;
-            ConditionSpec = baseSpec.ConditionSpec;
-            DefaultSupplierSpec = baseSpec.DefaultSupplierSpec;
-            DefaultModifierSpec = baseSpec.DefaultModifierSpec;
-            SupplierNameAttribute = baseSpec.SupplierNameAttribute;
-            ModifierNameAttribute = baseSpec.ModifierNameAttribute;
-        }
+        ConditionSpec ??= other.ConditionSpec;
+        SupplierSpecs.InheritFrom(other.SupplierSpecs);
+        ModifierSpecs.InheritFrom(other.ModifierSpecs);
     }
-
-    public XmlDynamicValueSupplierSpec<T, TC> GetSupplierSpec(string name)
-        => _supplierSpecs.TryGetValue(name, out var spec) ? spec : BaseSpec?.GetSupplierSpec(name);
-
-    public XmlDynamicValueSupplierSpec<T, TC> GetSupplierSpecOrThrow(string name)
-        => GetSupplierSpec(name) ?? throw new Exception($"XML dynamic value supplier with name {name} not found");
-
-    public void RegisterSupplierSpec(string name, XmlDynamicValueSupplierSpec<T, TC> spec)
-        => _supplierSpecs.Add(name, spec);
-
-    public void RegisterSupplier(string name, Func<TC, T> supplier)
-        => _supplierSpecs.Add(name, (_, _) => supplier);
 
     public Func<TC, T> BuildSupplier(XmlNode node, bool resolveFromNodeName = false)
-    {
-        var specName = resolveFromNodeName ? node.Name : node.Attributes?.GetNamedItem(SupplierNameAttribute)?.Value;
-        if (specName != null) return GetSupplierSpecOrThrow(specName)(node, this);
-
-        if (node.ChildNodes.Count == 1 && node.FirstChild.NodeType == XmlNodeType.Text)
-        {
-            var spec = GetSupplierSpec(node.FirstChild.Value);
-            if (spec != null) return spec(null, this);
-        }
-
-        return DefaultSupplierSpec(node, this);
-    }
-
-    public XmlDynamicValueModifierSpec<T, TC> GetModifierSpec(string name)
-        => _modifierSpecs.TryGetValue(name, out var spec) ? spec : BaseSpec?.GetModifierSpec(name);
-
-    public XmlDynamicValueModifierSpec<T, TC> GetModifierSpecOrThrow(string name)
-        => GetModifierSpec(name) ?? throw new Exception($"XML dynamic value modifier with name {name} not found");
-
-    public void RegisterModifierSpec(string name, XmlDynamicValueModifierSpec<T, TC> spec)
-        => _modifierSpecs.Add(name, spec);
-
-    public void RegisterModifier(string name, Func<TC, T, T> modifier)
-        => _modifierSpecs.Add(name, (_, _) => modifier);
+        => SupplierSpecs.GetForNode(node, resolveFromNodeName)(node, this) ?? throw new Exception($"Invalid node <{node.Name}>");
 
     public Func<TC, T, T> BuildModifier(XmlNode node, bool resolveFromNodeName = false)
-    {
-        var specName = resolveFromNodeName ? node.Name : node.Attributes?.GetNamedItem(ModifierNameAttribute)?.Value;
-        if (specName != null) return GetModifierSpecOrThrow(specName)(node, this);
+        => ModifierSpecs.GetForNode(node, resolveFromNodeName)(node, this) ?? throw new Exception($"Invalid node <{node.Name}>");
 
-        if (node.ChildNodes.Count == 1 && node.FirstChild.NodeType == XmlNodeType.Text)
+    public class Registry<TS> where TS : class
+    {
+        public TS DefaultSpec { get; set; }
+
+        public string SpecNameAttribute { get; set; }
+
+        public IReadOnlyDictionary<string, TS> Specs => _specs;
+        private readonly Dictionary<string, TS> _specs = new();
+
+        public IReadOnlyList<Func<string, TS>> Fallback => _fallback;
+        private readonly List<Func<string, TS>> _fallback = new(3);
+
+        public void InheritFrom(Registry<TS> other)
         {
-            var spec = GetModifierSpec(node.FirstChild.Value);
-            if (spec != null) return spec(null, this);
+            RegisterFallback(other.Get);
+            DefaultSpec ??= other.DefaultSpec;
+            SpecNameAttribute ??= other.SpecNameAttribute;
         }
 
-        return DefaultModifierSpec(node, this);
+        public TS Get(string name)
+            => _specs.TryGetValue(name, out var spec) ? spec : Fallback.Select(f => f(name)).LastOrDefault(f => f != null);
+
+        public TS GetOrThrow(string name)
+            => Get(name) ?? throw new Exception($"XML dynamic value supplier with name {name} not found");
+
+        public void Register(string name, TS spec)
+            => _specs.Add(name, spec);
+
+        public void RegisterFallback(Func<string, TS> fallback)
+            => _fallback.Add(fallback);
+
+        public TS GetForNode(XmlNode node, bool resolveFromNodeName = false)
+        {
+            var specName = resolveFromNodeName ? node.Name : node.Attributes?.GetNamedItem(SpecNameAttribute ?? "spec")?.Value;
+            if (specName != null) return GetOrThrow(specName);
+
+            if (node.HasSimpleTextValue() && node.InnerText.StartsWith("$"))
+                return GetOrThrow(node.InnerText.Substring(1));
+
+            return DefaultSpec;
+        }
     }
 }
 

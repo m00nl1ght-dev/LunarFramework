@@ -14,6 +14,11 @@ public abstract class XmlDynamicValue<T, TC>
     {
         return _root == null ? baseValue : _root(context, baseValue);
     }
+    
+    public void Apply(TC context, ref T value)
+    {
+        value = Get(context, value);
+    }
 
     public void LoadDataFromXmlCustom(XmlNode xmlRoot)
     {
