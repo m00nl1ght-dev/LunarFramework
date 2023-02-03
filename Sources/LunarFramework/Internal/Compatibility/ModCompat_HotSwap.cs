@@ -32,14 +32,14 @@ internal class ModCompat_HotSwap : ModCompat
 
         var frameworkAssemblyFile = LunarMod.FrameworkAssemblyFileIn(frameworkProvider.FrameworkDir);
         assemblyFiles.Add(typeof(LunarAPI).Assembly, new FileInfo(frameworkAssemblyFile));
-        LunarRoot.Logger.Log($"HotSwap mapped {frameworkAssemblyFile} to {typeof(LunarAPI).Assembly.GetName()}");
+        LunarRoot.Logger.Debug($"HotSwap mapped {frameworkAssemblyFile} to {typeof(LunarAPI).Assembly.GetName()}");
 
         foreach (var component in Entrypoint.LunarComponents.Values)
         {
             if (component.LoadedAssembly == null || assemblyFiles.ContainsKey(component.LoadedAssembly)) continue;
             var assemblyFile = Path.Combine(component.LatestVersionProvidedBy.ComponentsDir, component.AssemblyName + ".dll");
             assemblyFiles.Add(component.LoadedAssembly, new FileInfo(assemblyFile));
-            LunarRoot.Logger.Log($"HotSwap mapped {assemblyFile} to {component.LoadedAssembly.GetName()}");
+            LunarRoot.Logger.Debug($"HotSwap mapped {assemblyFile} to {component.LoadedAssembly.GetName()}");
         }
     }
 }

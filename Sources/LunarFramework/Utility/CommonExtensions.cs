@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using LunarFramework.Bootstrap;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace LunarFramework.Utility;
@@ -36,4 +38,8 @@ public static class CommonExtensions
         if (list.Count == 0) return fallback;
         return list[Rand.RangeSeeded(0, list.Count, seed)];
     }
+
+    public static Vector3 ToVec3(this IntVec3 vec) => new(vec.x, vec.y, vec.z);
+
+    public static void RunClassConstructor(this Type type) => RuntimeHelpers.RunClassConstructor(type.TypeHandle);
 }

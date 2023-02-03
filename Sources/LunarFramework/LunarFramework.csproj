@@ -97,7 +97,7 @@
         <Compile Include="Utility\StructRot4.cs" />
         <Compile Include="XML\XmlDynamicValue.cs" />
         <Compile Include="XML\XmlDynamicValueSupport.cs" />
-        <Compile Include="XML\XmlDynamicValueSpec.cs" />
+        <Compile Include="XML\XmlDynamicValueSpecs.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

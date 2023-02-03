@@ -116,7 +116,7 @@ public static class LunarGUI
         Widgets.Label(centerRect, labelCenter);
     }
 
-    public static void LabelDouble(LayoutRect layout, string labelLeft, string labelCenter, string tooltip = null)
+    public static void LabelDouble(LayoutRect layout, string labelLeft, string labelCenter, bool centered = true, string tooltip = null)
     {
         var labelLeftSize = Text.CalcSize(labelLeft);
         var labelCenterSize = Text.CalcSize(labelCenter);
@@ -124,7 +124,7 @@ public static class LunarGUI
         var leftRect = rect.LeftHalf();
         var centerRect = rect.RightHalf();
         leftRect.width = labelLeftSize.x;
-        centerRect.xMin -= labelCenterSize.x * 0.5f;
+        if (centered) centerRect.xMin -= labelCenterSize.x * 0.5f;
         if (tooltip != null) TooltipHandler.TipRegion(rect, tooltip);
         Widgets.Label(leftRect, labelLeft);
         Widgets.Label(centerRect, labelCenter);
@@ -225,5 +225,42 @@ public static class LunarGUI
         ColorBuffer.SetPixel(0, 0, color);
         ColorBuffer.Apply();
         UnityEngine.GUI.DrawTexture(quad, ColorBuffer);
+    }
+
+    public static Window OpenGenericWindow(LunarAPI component, Vector2 size, Action<Window, LayoutRect> onGUI)
+    {
+        var window = new GenericWindow(component, size, onGUI);
+        Find.WindowStack.Add(window);
+        return window;
+    }
+
+    private class GenericWindow : Window
+    {
+        public override Vector2 InitialSize { get; }
+        public Action<Window, LayoutRect> OnGUI { get; }
+
+        public LayoutParams LayoutParams { get; set; } = new() { Spacing = 5f };
+
+        private readonly LayoutRect _layout;
+        private Vector2 _scrollPos;
+        private Rect _viewRect;
+
+        public GenericWindow(LunarAPI component, Vector2 initialSize, Action<Window, LayoutRect> onGUI)
+        {
+            _layout = new LayoutRect(component);
+            InitialSize = initialSize;
+            OnGUI = onGUI;
+            doCloseX = true;
+        }
+
+        public override void DoWindowContents(Rect rect)
+        {
+            BeginScrollView(rect, ref _viewRect, ref _scrollPos);
+            _layout.BeginRoot(_viewRect, LayoutParams);
+            OnGUI(this, _layout);
+            _viewRect.height = Mathf.Max(_viewRect.height, _layout.OccupiedSpace);
+            _layout.End();
+            EndScrollView();
+        }
     }
 }

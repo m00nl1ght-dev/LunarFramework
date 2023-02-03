@@ -7,6 +7,7 @@ using Verse;
 
 namespace LunarFramework.Utility;
 
+[HotSwappable]
 public abstract class LunarModSettings : ModSettings
 {
     public IReadOnlyDictionary<string, Entry> Entries => _entries;
@@ -65,22 +66,33 @@ public abstract class LunarModSettings : ModSettings
             return;
         }
 
+        void SelectTab(Tab tab)
+        {
+            if (_tab != tab)
+            {
+                _viewRect.height = rect.height - 90f;
+                _tab = tab;
+            }
+        }
+
         _tabRecords ??= _tabs
             .Where(tab => tab.Condition == null || tab.Condition())
-            .Select(tab => new TabRecord(Label(tab.LabelTk), () => _tab = tab, () => _tab == tab)).ToList();
+            .Select(tab => new TabRecord(Label(tab.LabelTk), () => SelectTab(tab), () => _tab == tab)).ToList();
 
-        rect.yMin += 35;
-        rect.yMax -= 12;
+        var innerRect = rect;
 
-        Widgets.DrawMenuSection(rect);
-        TabDrawer.DrawTabs(rect, _tabRecords);
+        innerRect.yMin += 35;
+        innerRect.yMax -= 12;
 
-        rect = rect.ContractedBy(18f);
+        Widgets.DrawMenuSection(innerRect);
+        TabDrawer.DrawTabs(innerRect, _tabRecords);
 
-        LunarGUI.BeginScrollView(rect, ref _viewRect, ref _scrollPos);
+        innerRect = innerRect.ContractedBy(18f);
+
+        LunarGUI.BeginScrollView(innerRect, ref _viewRect, ref _scrollPos);
         _layout.BeginRoot(_viewRect, LayoutParams);
         _tab?.Content(_layout);
-        _viewRect.height = _layout.OccupiedSpace;
+        _viewRect.height = Mathf.Max(_viewRect.height, _layout.OccupiedSpace);
         _layout.End();
         LunarGUI.EndScrollView();
     }
