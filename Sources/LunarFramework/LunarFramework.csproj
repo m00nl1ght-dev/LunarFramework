@@ -93,6 +93,7 @@
         <Compile Include="Utility\LifecycleHooks.cs" />
         <Compile Include="Utility\LunarModSettings.cs" />
         <Compile Include="Utility\RandInstance.cs" />
+        <Compile Include="Utility\ReflectionUtils.cs" />
         <Compile Include="Utility\Rot6.cs" />
         <Compile Include="Utility\StructRot4.cs" />
         <Compile Include="XML\XmlDynamicValue.cs" />

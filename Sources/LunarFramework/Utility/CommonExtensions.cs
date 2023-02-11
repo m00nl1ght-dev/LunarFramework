@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using LunarFramework.Bootstrap;
 using RimWorld;
 using UnityEngine;
@@ -40,6 +39,4 @@ public static class CommonExtensions
     }
 
     public static Vector3 ToVec3(this IntVec3 vec) => new(vec.x, vec.y, vec.z);
-
-    public static void RunClassConstructor(this Type type) => RuntimeHelpers.RunClassConstructor(type.TypeHandle);
 }
