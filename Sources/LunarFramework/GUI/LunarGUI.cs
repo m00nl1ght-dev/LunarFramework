@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LunarFramework.Internal.Patches;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -94,6 +95,16 @@ public static class LunarGUI
     {
         var before = floatRange;
         Widgets.FloatRange(rect, rect.GetHashCode(), ref floatRange, min, max);
+        if (floatRange != before) UnityEngine.GUI.changed = true;
+    }
+
+    public static void RangeSlider(LayoutRect layout, ref FloatRange floatRange, float min, float max, Func<float, string> toString)
+        => RangeSlider(layout.Abs(layout.Horizontal ? -1f : 28f), ref floatRange, min, max, toString);
+
+    public static void RangeSlider(Rect rect, ref FloatRange floatRange, float min, float max, Func<float, string> toString)
+    {
+        var before = floatRange;
+        Patch_Verse_Widgets.FloatRange_Custom(rect, rect.GetHashCode(), ref floatRange, min, max, toString);
         if (floatRange != before) UnityEngine.GUI.changed = true;
     }
 

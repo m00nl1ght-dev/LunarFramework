@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using LunarFramework.Internal;
+using LunarFramework.Logging;
 using LunarFramework.Utility;
 
 namespace LunarFramework.Patching;
@@ -181,6 +183,50 @@ public class PatchGroup : IPatchGroup
             else
             {
                 DoUnpatch();
+            }
+        }
+    }
+
+    public void CheckForConflicts(Action<MethodBase, Patch> onConflict) => CheckForConflicts(_harmony.Id, onConflict);
+
+    public void CheckForConflicts(LogContext logger)
+    {
+        CheckForConflicts((method, patch) =>
+        {
+            var source = patch.PatchMethod.DeclaringType?.FindSourceMod()?.Name ?? patch.owner;
+            logger.Warn($"Detected potential conflict: The mod \"{source}\" ({patch.owner}) adds a destructive patch " +
+                        $"that will likely override or break some functionality of {logger.Name}.\n" +
+                        $"Patch method: {patch.PatchMethod?.FullDescription()}\n" +
+                        $"Target method: {method.FullDescription()}");
+        });
+    }
+
+    public static void CheckForConflicts(string id, Action<MethodBase, Patch> onConflict)
+    {
+        foreach (var method in Harmony.GetAllPatchedMethods())
+        {
+            try
+            {
+                var patchInfo = Harmony.GetPatchInfo(method);
+                var prefix = patchInfo.Prefixes.FirstOrDefault(p => p.owner == id);
+                var transpiler = patchInfo.Transpilers.FirstOrDefault(p => p.owner == id);
+
+                if (prefix != null || transpiler != null)
+                {
+                    foreach (var other in patchInfo.Prefixes)
+                    {
+                        if (other.owner == id) continue;
+                        if (other.PatchMethod.ReturnType != typeof(bool)) continue;
+                        if (transpiler == null && other.priority < prefix.priority) continue;
+                        if (prefix != null && (prefix.after.Contains(other.owner) || prefix.before.Contains(other.owner))) continue;
+                        if (transpiler != null && (transpiler.after.Contains(other.owner) || transpiler.before.Contains(other.owner))) continue;
+                        onConflict(method, other);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LunarRoot.Logger.Warn($"Exception occured while checking for conflicts on {method.FullDescription()}", e);
             }
         }
     }

@@ -9,7 +9,7 @@ namespace LunarFramework.Internal;
 
 internal class LunarRoot : MonoBehaviour
 {
-    internal static LogContext Logger => new IngameLogContext(typeof(LunarRoot), "LunarFramework", LunarAPI.FrameworkVersion);
+    internal static readonly LogContext Logger = new IngameLogContext(typeof(LunarRoot), "LunarFramework", LunarAPI.FrameworkVersion);
 
     internal static LunarRoot Instance { get; private set; }
     internal static bool IsReady => Instance != null;

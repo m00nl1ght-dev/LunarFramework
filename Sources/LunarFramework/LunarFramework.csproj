@@ -78,6 +78,8 @@
         <Compile Include="Internal\LunarRoot.cs" />
         <Compile Include="Internal\Patches\Patch_RimWorld_MainMenuDrawer.cs" />
         <Compile Include="Internal\Patches\Patch_Verse_StaticConstructorOnStartupUtility.cs" />
+        <Compile Include="Internal\Patches\Patch_Verse_Widgets.cs" />
+        <Compile Include="Logging\HarmonyLogContext.cs" />
         <Compile Include="Logging\IngameLogContext.cs" />
         <Compile Include="Logging\LogContext.cs" />
         <Compile Include="Logging\LogPublisher.cs" />
@@ -87,6 +89,7 @@
         <Compile Include="LunarAPI.cs" />
         <Compile Include="Patching\PatchGroupAttribute.cs" />
         <Compile Include="Patching\PatchGroupSubscriber.cs" />
+        <Compile Include="Patching\TranspilerPattern.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="Utility\CommonExtensions.cs" />
         <Compile Include="Utility\HotSwappableAttribute.cs" />

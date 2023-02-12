@@ -1,5 +1,6 @@
 using System;
 using LunarFramework.Utility;
+using Verse;
 
 namespace LunarFramework.Logging;
 
@@ -11,9 +12,9 @@ public class IngameLogContext : LogContext
 
     public override void Log(LogLevel level, string message, Exception exception = null)
     {
-        if (level < Level) return;
+        if (level < Level && !Prefs.LogVerbose) return;
 
-        message = "[" + Name + " v" + Version.ToStringPretty() + "] " + message;
+        message = $"[{Name} v{Version.ToStringPretty()}] {message}";
 
         if (level >= IgnoreLogLimitLevel)
         {

@@ -332,7 +332,7 @@ public static class XmlDynamicValueSupport
 
     public static Spec<Supplier<bool, TC>> ValueInRange<T, TC>() where T : IComparable<T>, IEquatable<T>
         => node => ValueInRange<T, TC>(node);
-    
+
     public static Spec<Supplier<bool, TC>> ValueInRange<T, TC>(Spec<Supplier<T, TC>> spec) where T : IComparable<T>, IEquatable<T>
         => spec == null ? null : node => ValueInRange(node, spec(node));
 

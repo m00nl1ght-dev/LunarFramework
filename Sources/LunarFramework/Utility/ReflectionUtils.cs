@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Verse;
 
 namespace LunarFramework.Utility;
 
@@ -18,6 +20,9 @@ public static class ReflectionUtils
 
         return (T) _cloneMethod.Invoke(obj, null);
     }
-    
+
+    public static ModContentPack FindSourceMod(this Type type)
+        => LoadedModManager.RunningMods.FirstOrDefault(mcp => mcp.assemblies.loadedAssemblies.Contains(type.Assembly));
+
     public static void RunClassConstructor(this Type type) => RuntimeHelpers.RunClassConstructor(type.TypeHandle);
 }
