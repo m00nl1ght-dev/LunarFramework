@@ -15,83 +15,100 @@ public struct Rot6 : IEquatable<Rot6>
     public int Index
     {
         get => _index;
-        set => _index = (byte) (value >= 0 ? value % 6 : value % 6 + 6);
+        set => _index = (byte) ((value % 6 + 6) % 6);
     }
 
     public float Angle
     {
         get => _angle;
-        set => _angle = value % 360f;
+        set => _angle = (value % 360f + 360f) % 360f;
     }
 
     public Rot6(int index, float angle)
     {
-        _index = (byte) (index >= 0 ? index % 6 : index % 6 + 6);
-        _angle = angle % 360f;
-    }
-
-    public Rot6 Opposite
-    {
-        get
-        {
-            return Index switch
-            {
-                0 => new Rot6(3, _angle + 180f),
-                1 => new Rot6(4, _angle + 180f),
-                2 => new Rot6(5, _angle + 180f),
-                3 => new Rot6(0, _angle + 180f),
-                4 => new Rot6(1, _angle + 180f),
-                5 => new Rot6(2, _angle + 180f),
-                _ => new Rot6()
-            };
-        }
+        Index = index;
+        Angle = angle;
     }
 
     public void Rotate(RotationDirection rotDir)
     {
-        if (rotDir == RotationDirection.Clockwise)
+        switch (rotDir)
         {
-            ++Index;
-            Angle += 60f;
-        }
-        else if (rotDir == RotationDirection.Counterclockwise)
-        {
-            --Index;
-            Angle -= 60f;
+            case RotationDirection.Clockwise:
+                Index++;
+                Angle += 60f;
+                break;
+            case RotationDirection.Counterclockwise:
+                Index--;
+                Angle -= 60f;
+                break;
+            case RotationDirection.Opposite:
+                Index += 3;
+                Angle += 180f;
+                break;
         }
     }
 
     public Rot6 Rotated(RotationDirection rotDir)
     {
-        var rot6 = this;
-        rot6.Rotate(rotDir);
-        return rot6;
+        return rotDir switch
+        {
+            RotationDirection.Clockwise => new Rot6(_index + 1, _angle + 60f),
+            RotationDirection.Counterclockwise => new Rot6(_index - 1, _angle - 60f),
+            RotationDirection.Opposite => new Rot6(_index + 3, _angle + 180f),
+            _ => this
+        };
     }
 
-    public Rot6 RotatedCW()
-    {
-        return Rotated(RotationDirection.Clockwise);
-    }
+    public Rot6 RotatedCW() => new(_index + 1, _angle + 60f);
 
-    public Rot6 RotatedCCW()
-    {
-        return Rotated(RotationDirection.Counterclockwise);
-    }
+    public Rot6 RotatedCCW() => new(_index - 1, _angle - 60f);
+
+    public Rot6 Opposite => new(_index + 3, _angle + 180f);
 
     public Rot4 AsRot4()
     {
         if (!IsValid) return Rot4.Invalid;
-        return Rot4.FromAngleFlat(Angle);
+        return Rot4.FromAngleFlat(_angle);
     }
 
     public bool Adjacent(Rot6 other)
     {
-        return (Index + 1) % 6 == other.Index || (Index - 1) % 6 == other.Index;
+        return (_index + 1) % 6 == other._index || (_index + 5) % 6 == other._index;
     }
 
-    public static bool operator ==(Rot6 a, Rot6 b) => a.Index == b.Index;
+    public bool IsSameOrAdjacent(Rot6 other)
+    {
+        return _index == other._index || (_index + 1) % 6 == other._index || (_index + 5) % 6 == other._index;
+    }
 
-    public static bool operator !=(Rot6 a, Rot6 b) => a.Index != b.Index;
+    public bool IsOpposite(Rot6 other)
+    {
+        return (_index + 3) % 6 == other._index;
+    }
+
+    public bool IsSameOrOpposite(Rot6 other)
+    {
+        return _index == other._index || (_index + 3) % 6 == other._index;
+    }
+
+    public bool IsRotatedCW(Rot6 other)
+    {
+        return (_index + 1) % 6 == other._index;
+    }
+
+    public bool IsRotatedCCW(Rot6 other)
+    {
+        return (_index + 5) % 6 == other._index;
+    }
+
+    public float Slant => AngleSlant(_angle);
+
+    public static float AngleSlant(float angle) => 1f - Math.Abs(angle % 90f - 45f) / 45f;
+
+    public static bool operator ==(Rot6 a, Rot6 b) => a._index == b._index;
+
+    public static bool operator !=(Rot6 a, Rot6 b) => a._index != b._index;
 
     public bool Equals(Rot6 other)
     {
@@ -115,7 +132,7 @@ public struct Rot6 : IEquatable<Rot6>
 
     public static float MidPoint(Rot6 a, Rot6 b)
     {
-        return MidPoint(a.Angle, b.Angle);
+        return MidPoint(a._angle, b._angle);
     }
 
     public static float MidPoint(float a, float b)
