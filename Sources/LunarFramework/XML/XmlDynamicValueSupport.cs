@@ -26,6 +26,7 @@ public static class XmlDynamicValueSupport
 
     public static readonly Func<bool, bool, bool> FuncAnd = (a, b) => a && b;
     public static readonly Func<bool, bool, bool> FuncOr = (a, b) => a || b;
+    public static readonly Func<bool, bool> FuncNot = a => !a;
 
     #endregion
 
@@ -71,9 +72,12 @@ public static class XmlDynamicValueSupport
     {
         var allOf = AggregateSupplierList<bool, TC>(FuncAnd);
         var anyOf = AggregateSupplierList<bool, TC>(FuncOr);
+        var noneOf = Transform(anyOf, FuncNot);
         specs.DefaultSpec = FixedValue<bool, TC>(bool.Parse).Or(allOf);
         specs.Register("allOf", allOf);
         specs.Register("anyOf", anyOf);
+        specs.Register("noneOf", noneOf);
+        specs.Register("not", noneOf);
     }
 
     public static void RegisterBasicBoolModifiers<TC>(this XmlDynamicValueSpecs<Modifier<bool, TC>> specs)
@@ -116,7 +120,7 @@ public static class XmlDynamicValueSupport
         return _ => value;
     }
 
-    public static Supplier<T, TC> Convert<T, TS, TC>(Supplier<TS, TC> supplier, Func<TS, T> convertFunc)
+    public static Supplier<T, TC> Transform<T, TS, TC>(Supplier<TS, TC> supplier, Func<TS, T> convertFunc)
     {
         return ctx => convertFunc(supplier(ctx));
     }
@@ -339,14 +343,14 @@ public static class XmlDynamicValueSupport
     public static Spec<Supplier<bool, TC>> ValueInRange<T, TC>(string name) where T : IComparable<T>, IEquatable<T>
         => ValueInRange(XmlDynamicValue<T, TC>.SupplierSpecs.Get(name));
 
-    public static Spec<Supplier<T, TC>> Convert<T, TS, TC>(Spec<Supplier<TS, TC>> spec, Func<TS, T> convertFunc)
-        => spec == null ? null : node => Convert(spec(node), convertFunc);
+    public static Spec<Supplier<T, TC>> Transform<T, TS, TC>(Spec<Supplier<TS, TC>> spec, Func<TS, T> convertFunc)
+        => spec == null ? null : node => Transform(spec(node), convertFunc);
 
-    public static Spec<Supplier<T, TC>> Convert<T, TS, TC>(string name, Func<TS, T> convertFunc)
-        => Convert(XmlDynamicValue<TS, TC>.SupplierSpecs.Get(name), convertFunc);
+    public static Spec<Supplier<T, TC>> Transform<T, TS, TC>(string name, Func<TS, T> convertFunc)
+        => Transform(XmlDynamicValue<TS, TC>.SupplierSpecs.Get(name), convertFunc);
 
-    public static Func<string, Spec<Supplier<T, TC>>> Convert<T, TS, TC>(Func<TS, T> convertFunc)
-        => name => Convert<T, TS, TC>(name, convertFunc);
+    public static Func<string, Spec<Supplier<T, TC>>> Transform<T, TS, TC>(Func<TS, T> convertFunc)
+        => name => Transform<T, TS, TC>(name, convertFunc);
 
     public static Spec<Supplier<List<T>, TC>> FixedList<T, TC>(Func<XmlNode, T> elementLoadFunc)
         => node => FixedList<T, TC>(node, elementLoadFunc);
