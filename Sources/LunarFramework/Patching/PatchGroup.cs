@@ -203,13 +203,18 @@ public class PatchGroup : IPatchGroup
 
     public static void CheckForConflicts(string id, Action<MethodBase, Patch> onConflict)
     {
+        bool ShouldCheckForConflicts(Patch patch)
+        {
+            return patch.owner == id && patch.PatchMethod?.GetCustomAttribute<PatchExcludedFromConflictCheckAttribute>() == null;
+        }
+        
         foreach (var method in Harmony.GetAllPatchedMethods())
         {
             try
             {
                 var patchInfo = Harmony.GetPatchInfo(method);
-                var prefix = patchInfo.Prefixes.FirstOrDefault(p => p.owner == id);
-                var transpiler = patchInfo.Transpilers.FirstOrDefault(p => p.owner == id);
+                var prefix = patchInfo.Prefixes.FirstOrDefault(ShouldCheckForConflicts);
+                var transpiler = patchInfo.Transpilers.FirstOrDefault(ShouldCheckForConflicts);
 
                 if (prefix != null || transpiler != null)
                 {
@@ -231,3 +236,6 @@ public class PatchGroup : IPatchGroup
         }
     }
 }
+
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+public class PatchExcludedFromConflictCheckAttribute : Attribute { }

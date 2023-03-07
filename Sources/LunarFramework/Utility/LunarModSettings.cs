@@ -7,7 +7,6 @@ using Verse;
 
 namespace LunarFramework.Utility;
 
-[HotSwappable]
 public abstract class LunarModSettings : ModSettings
 {
     public IReadOnlyDictionary<string, Entry> Entries => _entries;
