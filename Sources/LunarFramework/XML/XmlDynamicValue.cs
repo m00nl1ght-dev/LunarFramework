@@ -4,8 +4,8 @@ namespace LunarFramework.XML;
 
 public class XmlDynamicValue<T, TC>
 {
-    public static XmlDynamicValueSpecs<Supplier<T, TC>> SupplierSpecs { get; } = new() { NameAttribute = "supplier" };
-    public static XmlDynamicValueSpecs<Modifier<T, TC>> ModifierSpecs { get; } = new() { NameAttribute = "operation" };
+    public static XmlDynamicValueSpecs<Supplier<T, TC>> SupplierSpecs { get; } = XmlDynamicValueSupport.DefaultSupplierSpecs<T, TC>();
+    public static XmlDynamicValueSpecs<Modifier<T, TC>> ModifierSpecs { get; } = XmlDynamicValueSupport.DefaultModifierSpecs<T, TC>();
 
     private Modifier<T, TC> _root;
 

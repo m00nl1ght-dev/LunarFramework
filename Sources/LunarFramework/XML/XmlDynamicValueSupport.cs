@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Xml;
+using HarmonyLib;
 using UnityEngine;
 using Verse;
 
@@ -29,79 +31,136 @@ public static class XmlDynamicValueSupport
     public static readonly Func<bool, bool, bool> FuncOr = (a, b) => a || b;
     public static readonly Func<bool, bool> FuncNot = a => !a;
 
+    public static readonly Func<float, float> FuncZero = _ => 0f;
+    public static readonly Func<float, float> FuncOne = _ => 1f;
+
+    public static T FuncIdentity<T>(T a) => a;
     public static T FuncReplace<T>(T a, T b) => b;
+
+    public static List<T> FuncUnion<T>(List<T> a, List<T> b) => b.Union(a).ToList();
+    public static List<T> FuncExcept<T>(List<T> a, List<T> b) => b.Except(a).ToList();
+    public static List<T> FuncIntersect<T>(List<T> a, List<T> b) => b.Intersect(a).ToList();
 
     #endregion
 
     #region Registration Helpers
 
-    public static void RegisterBasicNumericSuppliers<TC>(this XmlDynamicValueSpecs<Supplier<float, TC>> specs)
+    public static XmlDynamicValueSpecs<Supplier<T, TC>> DefaultSupplierSpecs<T, TC>()
     {
-        specs.DefaultSpec = FixedValue<float, TC>(float.Parse);
-        specs.Register("sum", AggregateSupplierList<float, TC>(FuncAdd));
-        specs.Register("product", AggregateSupplierList<float, TC>(FuncMultiply));
+        var specs = new XmlDynamicValueSpecs<Supplier<T, TC>> { NameAttribute = "supplier" };
+
+        if (specs is XmlDynamicValueSpecs<Supplier<float, TC>> sNum)
+        {
+            sNum.DefaultSpec = FixedValue<float, TC>(float.Parse);
+            sNum.Register("sum", AggregateSupplierList<float, TC>(FuncAdd));
+            sNum.Register("product", AggregateSupplierList<float, TC>(FuncMultiply));
+        }
+        else if (specs is XmlDynamicValueSpecs<Supplier<string, TC>> sStr)
+        {
+            sStr.DefaultSpec = FixedValue<string, TC>(s => s);
+            sStr.Register("translate", SupplierWithParam<string, TC>((s, _) => s.Translate()));
+            sStr.RegisterFallback(Transform<string, float, TC>(v => v.ToString("0.##")));
+        }
+        else if (specs is XmlDynamicValueSpecs<Supplier<bool, TC>> sBool)
+        {
+            var allOf = AggregateSupplierList<bool, TC>(FuncAnd);
+            var anyOf = AggregateSupplierList<bool, TC>(FuncOr);
+            var noneOf = Transform(anyOf, FuncNot);
+            
+            sBool.DefaultSpec = FixedValue<bool, TC>(bool.Parse).Or(allOf);
+            
+            sBool.Register("allOf", allOf);
+            sBool.Register("anyOf", anyOf);
+            sBool.Register("noneOf", noneOf);
+            sBool.Register("not", noneOf);
+
+            sBool.Register("valueInRange", ValueInRange<float, TC>());
+            sBool.RegisterFallback(ValueInRange<float, TC>);
+        }
+        else if (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(List<>))
+        {
+            var elementType = typeof(T).GetGenericArguments()[0];
+            var method = MethodDls.MakeGenericMethod(elementType, typeof(TC));
+            method.Invoke(null, new object[] { specs });
+        }
+        else if (GenTypes.IsDef(typeof(T)))
+        {
+            specs.DefaultSpec = FixedDef<T, TC>;
+        }
+        else if (ParseHelper.HandlesType(typeof(T)))
+        {
+            specs.DefaultSpec = FixedValue<T, TC>(ParseHelper.FromString<T>);
+        }
+        else
+        {
+            specs.DefaultSpec = node => FixedValue<T, TC>(DirectXmlToObject.ObjectFromXml<T>(node, false));
+        }
+
+        specs.Register("select", SelectValue<T, TC>);
+
+        return specs;
     }
 
-    public static void RegisterBasicNumericModifiers<TC>(this XmlDynamicValueSpecs<Modifier<float, TC>> specs)
+    public static XmlDynamicValueSpecs<Modifier<T, TC>> DefaultModifierSpecs<T, TC>()
     {
-        specs.DefaultSpec = DyadicModifierVerbose<float, TC>(FuncReplace);
-        specs.Register("add", DyadicModifierVerbose<float, TC>(FuncAdd));
-        specs.Register("multiply", DyadicModifierVerbose<float, TC>(FuncMultiply));
-        specs.Register("subtract", DyadicModifierVerbose<float, TC>(FuncSubtract));
-        specs.Register("divide", DyadicModifierVerbose<float, TC>(FuncDivideSafely));
-        specs.Register("curve", InterpolationCurve<TC>);
-        specs.Register("replace", specs.DefaultSpec);
+        var specs = new XmlDynamicValueSpecs<Modifier<T, TC>> { NameAttribute = "operation" };
+
+        if (specs is XmlDynamicValueSpecs<Modifier<float, TC>> sNum)
+        {
+            sNum.DefaultSpec = DyadicModifierVerbose<float, TC>(FuncReplace, FuncIdentity);
+            sNum.Register("add", DyadicModifierVerbose<float, TC>(FuncAdd, FuncZero));
+            sNum.Register("multiply", DyadicModifierVerbose<float, TC>(FuncMultiply, FuncOne));
+            sNum.Register("subtract", DyadicModifierVerbose<float, TC>(FuncSubtract, FuncZero));
+            sNum.Register("divide", DyadicModifierVerbose<float, TC>(FuncDivideSafely, FuncOne));
+            sNum.Register("curve", InterpolationCurve<TC>);
+            sNum.Register("replace", sNum.DefaultSpec);
+        }
+        else if (specs is XmlDynamicValueSpecs<Modifier<string, TC>> sStr)
+        {
+            sStr.DefaultSpec = DyadicModifierVerbose<string, TC>(FuncReplace, FuncIdentity);
+            sStr.Register("append", DyadicModifierVerbose<string, TC>(FuncAppend));
+            sStr.Register("prepend", DyadicModifierVerbose<string, TC>(FuncPrepend));
+            sStr.Register("appendLine", DyadicModifierVerbose<string, TC>(FuncAppendLine));
+            sStr.Register("prependLine", DyadicModifierVerbose<string, TC>(FuncPrependLine));
+            sStr.Register("appendPar", DyadicModifierVerbose<string, TC>(FuncAppendPar));
+            sStr.Register("prependPar", DyadicModifierVerbose<string, TC>(FuncPrependPar));
+            sStr.Register("replace", sStr.DefaultSpec);
+        }
+        else if (specs is XmlDynamicValueSpecs<Modifier<bool, TC>> sBool)
+        {
+            sBool.DefaultSpec = DyadicModifier<bool, TC>(FuncReplace);
+            sBool.Register("and", DyadicModifier<bool, TC>(FuncAnd));
+            sBool.Register("or", DyadicModifier<bool, TC>(FuncOr));
+            sBool.Register("replace", sBool.DefaultSpec);
+        }
+        else if (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(List<>))
+        {
+            var elementType = typeof(T).GetGenericArguments()[0];
+            var method = MethodDlm.MakeGenericMethod(elementType, typeof(TC));
+            method.Invoke(null, new object[] { specs });
+        }
+        else
+        {
+            specs.DefaultSpec = DyadicModifierVerbose<T, TC>(FuncReplace, FuncIdentity);
+        }
+
+        return specs;
     }
 
-    public static void RegisterBasicStringSuppliers<TC>(this XmlDynamicValueSpecs<Supplier<string, TC>> specs)
-    {
-        specs.DefaultSpec = FixedValue<string, TC>(s => s);
-        specs.Register("translate", SupplierWithParam<string, TC>((s, _) => s.Translate()));
-    }
+    private static readonly MethodInfo MethodDls = AccessTools.Method(typeof(XmlDynamicValueSupport), nameof(DefaultListSuppliers));
+    private static readonly MethodInfo MethodDlm = AccessTools.Method(typeof(XmlDynamicValueSupport), nameof(DefaultListModifiers));
 
-    public static void RegisterBasicStringModifiers<TC>(this XmlDynamicValueSpecs<Modifier<string, TC>> specs)
-    {
-        specs.DefaultSpec = DyadicModifierVerbose<string, TC>(FuncReplace);
-        specs.Register("append", DyadicModifierVerbose<string, TC>(FuncAppend));
-        specs.Register("prepend", DyadicModifierVerbose<string, TC>(FuncPrepend));
-        specs.Register("appendLine", DyadicModifierVerbose<string, TC>(FuncAppendLine));
-        specs.Register("prependLine", DyadicModifierVerbose<string, TC>(FuncPrependLine));
-        specs.Register("appendPar", DyadicModifierVerbose<string, TC>(FuncAppendPar));
-        specs.Register("prependPar", DyadicModifierVerbose<string, TC>(FuncPrependPar));
-        specs.Register("replace", specs.DefaultSpec);
-    }
-
-    public static void RegisterBasicBoolSuppliers<TC>(this XmlDynamicValueSpecs<Supplier<bool, TC>> specs)
-    {
-        var allOf = AggregateSupplierList<bool, TC>(FuncAnd);
-        var anyOf = AggregateSupplierList<bool, TC>(FuncOr);
-        var noneOf = Transform(anyOf, FuncNot);
-        specs.DefaultSpec = FixedValue<bool, TC>(bool.Parse).Or(allOf);
-        specs.Register("allOf", allOf);
-        specs.Register("anyOf", anyOf);
-        specs.Register("noneOf", noneOf);
-        specs.Register("not", noneOf);
-    }
-
-    public static void RegisterBasicBoolModifiers<TC>(this XmlDynamicValueSpecs<Modifier<bool, TC>> specs)
-    {
-        specs.DefaultSpec = DyadicModifier<bool, TC>(FuncReplace);
-        specs.Register("and", DyadicModifier<bool, TC>(FuncAnd));
-        specs.Register("or", DyadicModifier<bool, TC>(FuncOr));
-        specs.Register("replace", specs.DefaultSpec);
-    }
-
-    public static void RegisterBasicListSuppliers<T, TC>(this XmlDynamicValueSpecs<Supplier<List<T>, TC>> specs)
+    private static void DefaultListSuppliers<T, TC>(this XmlDynamicValueSpecs<Supplier<List<T>, TC>> specs)
     {
         specs.DefaultSpec = SupplierList<T, TC>;
     }
 
-    public static void RegisterBasicListModifiers<T, TC>(this XmlDynamicValueSpecs<Modifier<List<T>, TC>> specs, IEqualityComparer<T> eqComp = null)
+    private static void DefaultListModifiers<T, TC>(this XmlDynamicValueSpecs<Modifier<List<T>, TC>> specs)
     {
         specs.DefaultSpec = DyadicModifierVerbose<List<T>, TC>(FuncReplace);
-        specs.Register("add", DyadicModifierVerbose<List<T>, TC>((a, b) => b.Union(a, eqComp).ToList()));
-        specs.Register("remove", DyadicModifierVerbose<List<T>, TC>((a, b) => a.Except(b, eqComp).ToList()));
-        specs.Register("intersect", DyadicModifierVerbose<List<T>, TC>((a, b) => b.Intersect(a, eqComp).ToList()));
+        specs.Register("add", DyadicModifierVerbose<List<T>, TC>(FuncUnion));
+        specs.Register("remove", DyadicModifierVerbose<List<T>, TC>(FuncExcept));
+        specs.Register("intersect", DyadicModifierVerbose<List<T>, TC>(FuncIntersect));
         specs.Register("replace", specs.DefaultSpec);
     }
 
@@ -158,10 +217,8 @@ public static class XmlDynamicValueSupport
         for (var i = 0; i < node.ChildNodes.Count; i++)
         {
             var childNode = node.ChildNodes[i];
-            suppliers.Add(XmlDynamicValue<T, TC>.SupplierSpecs.Build(childNode, true));
+            suppliers.Add(XmlDynamicValue<T, TC>.SupplierSpecs.Build(childNode));
         }
-
-        if (suppliers.Count == 0) throw new Exception($"Invalid node <{node.Name}>");
 
         return ctx => suppliers.Select(f => f(ctx)).ToList();
     }
@@ -181,6 +238,51 @@ public static class XmlDynamicValueSupport
         if (suppliers.Count == 0) throw new Exception($"Invalid node <{node.Name}>");
 
         return ctx => suppliers.Select(f => f(ctx)).Aggregate(combineOperation);
+    }
+
+    public static Supplier<T, TC> SelectValue<T, TC>(XmlNode node)
+    {
+        if (node.HasSimpleTextValue()) throw new Exception($"Invalid select supplier node <{node.Name}>");
+
+        List<(Supplier<T, TC>, Supplier<bool, TC>)> options = new();
+
+        Supplier<T, TC> defaultSupplier = null;
+
+        for (var i = 0; i < node.ChildNodes.Count; i++)
+        {
+            var childNode = node.ChildNodes[i];
+
+            if (childNode.Name == "option")
+            {
+                var valueNode = childNode.GetNamedChild("value");
+                var valueSupplier = XmlDynamicValue<T, TC>.SupplierSpecs.Build(valueNode);
+
+                var conditionsNode = childNode.GetNamedChild("conditions");
+                var conditionsSupplier = XmlDynamicValue<bool, TC>.SupplierSpecs.Build(conditionsNode);
+
+                options.Add((valueSupplier, conditionsSupplier));
+            }
+            else if (childNode.Name == "default")
+            {
+                if (defaultSupplier != null) throw new Exception($"There can only be one <{childNode.Name}> element in a <{node.Name}> node");
+                defaultSupplier = XmlDynamicValue<T, TC>.SupplierSpecs.Build(childNode);
+            }
+            else
+            {
+                throw new Exception($"Unknown element <{childNode.Name}> in node <{node.Name}>");
+            }
+        }
+
+        defaultSupplier ??= DefaultValue<T, TC>();
+
+        return ctx =>
+        {
+            foreach (var (supplier, conditions) in options)
+                if (conditions(ctx))
+                    return supplier(ctx);
+
+            return defaultSupplier(ctx);
+        };
     }
 
     public static Supplier<bool, TC> ValueInRange<T, TC>(XmlNode node, Supplier<T, TC> supplier = null) where T : IComparable<T>, IEquatable<T>
@@ -230,14 +332,14 @@ public static class XmlDynamicValueSupport
         throw new Exception($"Invalid node <{node.Name}>");
     }
 
-    public static Supplier<T, TC> FixedDef<T, TC>(XmlNode node) where T : Def
+    public static Supplier<T, TC> FixedDef<T, TC>(XmlNode node)
     {
         if (!node.HasSimpleTextValue()) return null;
         var holder = new DefHolder<T>(node);
         return _ => holder.value;
     }
 
-    public static Supplier<List<T>, TC> FixedDefList<T, TC>(XmlNode node) where T : Def
+    public static Supplier<List<T>, TC> FixedDefList<T, TC>(XmlNode node)
     {
         if (node.HasSimpleTextValue())
         {
@@ -259,9 +361,9 @@ public static class XmlDynamicValueSupport
     }
 
     [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
-    private class DefHolder<T> where T : Def
+    private class DefHolder<T>
     {
-        public T value = null;
+        public T value = default;
 
         public DefHolder(XmlNode node)
         {
@@ -281,7 +383,7 @@ public static class XmlDynamicValueSupport
         return (ctx, value) => dyadicOperation(value, operandSupplier(ctx));
     }
 
-    public static Modifier<T, TC> DyadicModifierVerbose<T, TC>(XmlNode node, Func<T, T, T> dyadicOperation)
+    public static Modifier<T, TC> DyadicModifierVerbose<T, TC>(XmlNode node, Func<T, T, T> dyadicOperation, Func<T, T> neutralOperand = null)
     {
         if (node.HasSimpleTextValue() || (typeof(ICollection).IsAssignableFrom(typeof(T)) && node.GetNamedChild("value", true) == null))
         {
@@ -317,7 +419,7 @@ public static class XmlDynamicValueSupport
             }
         }
 
-        if (operandSupplier == null)
+        if (operandSupplier == null && (operandModifiers == null || neutralOperand == null))
         {
             throw new Exception($"Required element <value> is missing in node <{node.Name}>");
         }
@@ -328,10 +430,14 @@ public static class XmlDynamicValueSupport
             return (ctx, value) => conditions(ctx) ? dyadicOperation(value, operandSupplier(ctx)) : value;
         }
 
-        T ApplyModifiers(TC ctx, T op) => operandModifiers.Aggregate(op, (current, modifier) => modifier(ctx, current));
+        T ApplyModifiers(TC ctx, T value)
+        {
+            var baseOperand = operandSupplier != null ? operandSupplier(ctx) : neutralOperand(value);
+            return operandModifiers.Aggregate(baseOperand, (current, modifier) => modifier(ctx, current));
+        }
 
-        if (conditions == null) return (ctx, value) => dyadicOperation(value, ApplyModifiers(ctx, operandSupplier(ctx)));
-        return (ctx, value) => conditions(ctx) ? dyadicOperation(value, ApplyModifiers(ctx, operandSupplier(ctx))) : value;
+        if (conditions == null) return (ctx, value) => dyadicOperation(value, ApplyModifiers(ctx, value));
+        return (ctx, value) => conditions(ctx) ? dyadicOperation(value, ApplyModifiers(ctx, value)) : value;
     }
 
     public static Modifier<float, TC> InterpolationCurve<TC>(XmlNode node)
@@ -408,8 +514,8 @@ public static class XmlDynamicValueSupport
     public static Spec<Modifier<T, TC>> DyadicModifier<T, TC>(Func<T, T, T> dyadicOperation)
         => node => DyadicModifier<T, TC>(node, dyadicOperation);
 
-    public static Spec<Modifier<T, TC>> DyadicModifierVerbose<T, TC>(Func<T, T, T> dyadicOperation)
-        => node => DyadicModifierVerbose<T, TC>(node, dyadicOperation);
+    public static Spec<Modifier<T, TC>> DyadicModifierVerbose<T, TC>(Func<T, T, T> dyadicOperation, Func<T, T> neutralOperand = null)
+        => node => DyadicModifierVerbose<T, TC>(node, dyadicOperation, neutralOperand);
 
     #endregion
 
