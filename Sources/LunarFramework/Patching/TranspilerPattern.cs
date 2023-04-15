@@ -177,6 +177,8 @@ public class TranspilerPattern
 
     public Element Match(OpCode opcode, object operand) => Match(ci => Equals(ci.opcode, opcode) && Equals(ci.operand, operand));
 
+    public Element Match(CodeInstruction match) => Match(ci => Equals(ci.opcode, match.opcode) && Equals(ci.operand, match.operand));
+
     public Element MatchConst(long val) => Match(ci => ci.LoadsConstant(val));
 
     public Element MatchConst(double val) => Match(ci => ci.LoadsConstant(val));
@@ -374,14 +376,14 @@ public class TranspilerPattern
         {
             foreach (var dci in dest)
             {
-                if (LdlocToStloc.ContainsKey(ci.opcode))
+                if (LdlocToStloc.TryGetValue(ci.opcode, out var opSt))
                 {
-                    if (StlocToLdloc.ContainsKey(dci.opcode)) dci.opcode = LdlocToStloc[ci.opcode];
+                    if (StlocToLdloc.ContainsKey(dci.opcode)) dci.opcode = opSt;
                     else if (LdlocToStloc.ContainsKey(dci.opcode)) dci.opcode = ci.opcode;
                 }
-                else if (StlocToLdloc.ContainsKey(ci.opcode))
+                else if (StlocToLdloc.TryGetValue(ci.opcode, out var opLd))
                 {
-                    if (LdlocToStloc.ContainsKey(dci.opcode)) dci.opcode = StlocToLdloc[ci.opcode];
+                    if (LdlocToStloc.ContainsKey(dci.opcode)) dci.opcode = opLd;
                     else if (StlocToLdloc.ContainsKey(dci.opcode)) dci.opcode = ci.opcode;
                 }
 
