@@ -71,7 +71,7 @@ public class LogPublisher
     private readonly string _gitHubAuthToken =
         "6b69be56e8d8eaf678377c992a3d0c9b6da917e0".Reverse().Join(""); // GitHub will revoke any tokens committed
 
-    private readonly Regex _uploadResponseUrlMatch = new Regex("\"html_url\":\"(https://gist\\.github\\.com/\\w+)\"");
+    private readonly Regex _uploadResponseUrlMatch = new Regex("\"html_url\":\"(https://gist\\.github\\.com/[\\w/]+)\"");
     private UnityWebRequest _activeRequest;
     private Thread _mockThread;
 
