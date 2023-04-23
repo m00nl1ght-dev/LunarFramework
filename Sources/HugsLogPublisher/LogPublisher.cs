@@ -62,7 +62,7 @@ public class LogPublisher
     private const string ShortenerUrl = "https://git.io/";
 
     private const string GistPayloadJson =
-        "{{\"description\":\"{0}\",\"public\":true,\"files\":{{\"{1}\":{{\"content\":\"{2}\"}}}}}}";
+        "{{\"description\":\"{0}\",\"public\":{1},\"files\":{{\"{2}\":{{\"content\":\"{3}\"}}}}}}";
 
     private const string GistDescription = "Rimworld output log published using HugsLib";
     private const int MaxLogLineCount = 10000;
@@ -169,14 +169,19 @@ public class LogPublisher
         try
         {
             collatedData = CleanForJson(collatedData);
-            var payload = string.Format(GistPayloadJson, GistDescription, OutputLogFilename, collatedData);
+            var useCustomAuthToken = !string.IsNullOrWhiteSpace(_publishOptions.AuthToken);
+            var authToken = useCustomAuthToken
+                ? _publishOptions.AuthToken.Trim()
+                : _gitHubAuthToken;
+            var publicVisibility = useCustomAuthToken ? "false" : "true";
+            var payload = string.Format(GistPayloadJson,
+                GistDescription, publicVisibility, OutputLogFilename, collatedData);
             _activeRequest = new UnityWebRequest(GistApiUrl, UnityWebRequest.kHttpVerbPOST);
-            _activeRequest.SetRequestHeader("Authorization", "token " + _gitHubAuthToken);
+            _activeRequest.SetRequestHeader("Authorization", "token " + authToken);
             _activeRequest.SetRequestHeader("User-Agent", RequestUserAgent);
-            _activeRequest.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload))
-                { contentType = "application/json" };
+            _activeRequest.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload)) { contentType = "application/json" };
             _activeRequest.downloadHandler = new DownloadHandlerBuffer();
-            HugsLibUtility.AwaitUnityWebResponse(_activeRequest, OnUploadComplete, OnRequestFailed,
+            HugsLibUtility.AwaitUnityWebResponse(_activeRequest, OnUploadComplete, OnRequestFailed, 
                 HttpStatusCode.Created, PublishRequestTimeout);
         }
         catch (Exception e)
@@ -332,10 +337,10 @@ public class LogPublisher
     private int IndexOfOccurence(string s, char match, int occurence)
     {
         int currentOccurence = 1;
-        int curentIndex = 0;
-        while (currentOccurence <= occurence && (curentIndex = s.IndexOf(match, curentIndex + 1)) != -1)
+        int currentIndex = 0;
+        while (currentOccurence <= occurence && (currentIndex = s.IndexOf(match, currentIndex + 1)) != -1)
         {
-            if (currentOccurence == occurence) return curentIndex;
+            if (currentOccurence == occurence) return currentIndex;
             currentOccurence++;
         }
 
@@ -366,21 +371,11 @@ public class LogPublisher
 
     private string RedactHomeDirectoryPaths(string log)
     {
-        // not necessary for windows logs
-        if (HugsLibUtility.GetCurrentPlatform() == PlatformType.Windows)
-        {
-            return log;
-        }
-
         const string pathReplacement = "[Home_dir]";
-        var homePath = Environment.GetEnvironmentVariable("HOME");
-        if (homePath == null)
-        {
-            return log;
-        }
-
-        return log.Replace(homePath, pathReplacement);
+        var homePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        return Regex.Replace(log, Regex.Escape(homePath), pathReplacement, RegexOptions.IgnoreCase);
     }
+
 
     private string RedactRimworldPaths(string log)
     {

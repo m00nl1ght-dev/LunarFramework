@@ -64,7 +64,7 @@ internal class Dialog_PublishLogsOptions : Window
         l.Gap(gapSize * 2f);
 
         _options.UseCustomOptions = !AddOptionCheckbox(l, "HugsLogPublisher.useRecommendedSettings", null,
-            !_options.UseCustomOptions, out bool optionsUsageChanged);
+            !_options.UseCustomOptions, out bool optionsUsageChanged, 0f);
         if (optionsUsageChanged)
         {
             UpdateWindowSize();
@@ -74,14 +74,14 @@ internal class Dialog_PublishLogsOptions : Window
         if (_options.UseCustomOptions)
         {
             const float indent = gapSize * 2f;
-            _options.UseUrlShortener = AddOptionCheckbox(l, "HugsLogPublisher.shortUrls", "HugsLogPublisher.shortUrls_tip",
-                _options.UseUrlShortener, out _, indent);
+            _options.UseUrlShortener = AddOptionCheckbox(l, "HugsLogPublisher.shortUrls",
+                "HugsLogPublisher.shortUrls_tip", _options.UseUrlShortener, out _, indent);
             _options.IncludePlatformInfo = AddOptionCheckbox(l, "HugsLogPublisher.platformInfo",
-                "HugsLogPublisher.platformInfo_tip",
-                _options.IncludePlatformInfo, out _, indent);
+                "HugsLogPublisher.platformInfo_tip", _options.IncludePlatformInfo, out _, indent);
             _options.AllowUnlimitedLogSize = AddOptionCheckbox(l, "HugsLogPublisher.unlimitedLogSize",
-                "HugsLogPublisher.unlimitedLogSize_tip",
-                _options.AllowUnlimitedLogSize, out _, indent);
+                "HugsLogPublisher.unlimitedLogSize_tip", _options.AllowUnlimitedLogSize, out _, indent);
+            _options.AuthToken = AddOptionTextField(l, "HugsLogPublisher.githubToken",
+                "HugsLogPublisher.githubToken_tip", _options.AuthToken, indent);
         }
 
         l.End();
@@ -111,28 +111,45 @@ internal class Dialog_PublishLogsOptions : Window
         }
     }
 
-    private bool AddOptionCheckbox(
-        Listing_Standard listing, string labelKey, string tooltipKey, bool value,
-        out bool changed, float indent = 0f)
+    private static bool AddOptionCheckbox(
+        Listing listing, string labelKey, string tooltipKey, bool value, out bool changed, float indent)
     {
         bool valueAfter = value;
-        var checkRect = listing.GetRect(Text.LineHeight).LeftHalf();
+        var fullRect = listing.GetRect(Text.LineHeight);
+        var checkRect = fullRect.RightPartPixels(fullRect.width - indent).LeftHalf();
         listing.Gap(ToggleVerticalSpacing);
-        checkRect.x += indent;
         if (tooltipKey != null && Mouse.IsOver(checkRect))
         {
             Widgets.DrawHighlight(checkRect);
             TooltipHandler.TipRegion(checkRect, tooltipKey.Translate());
         }
-
         Widgets.CheckboxLabeled(checkRect, labelKey.Translate(), ref valueAfter);
         changed = valueAfter != value;
         return valueAfter;
     }
 
+    private static string AddOptionTextField(
+        Listing listing, string labelKey, string tooltipKey, string value, float indent)
+    {
+        listing.Gap(ToggleVerticalSpacing);
+        var fullRect = listing.GetRect(Text.LineHeight);
+        var indentedRect = fullRect.RightPartPixels(fullRect.width - indent);
+        const float leftPartPixels = 222;
+        var labelRect = indentedRect.LeftPartPixels(leftPartPixels);
+        var textFieldRect = indentedRect.RightPartPixels(indentedRect.width - leftPartPixels);
+        if (tooltipKey != null && Mouse.IsOver(indentedRect))
+        {
+            Widgets.DrawHighlight(indentedRect);
+            TooltipHandler.TipRegion(indentedRect, tooltipKey.Translate());
+        }
+
+        Widgets.Label(labelRect, labelKey.Translate());
+        return Widgets.TextField(textFieldRect, value);
+    }
+
     private void UpdateWindowSize()
     {
-        const int numHiddenOptions = 3;
+        const int numHiddenOptions = 4;
         float extraWindowHeight =
             _options.UseCustomOptions ? (Text.LineHeight + ToggleVerticalSpacing) * numHiddenOptions : 0;
         windowRect = new Rect(windowRect.x, windowRect.y, InitialSize.x, InitialSize.y + extraWindowHeight);
