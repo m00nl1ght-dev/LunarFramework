@@ -22,6 +22,8 @@ internal static class Entrypoint
     internal static readonly Dictionary<string, LunarMod> LunarMods = new();
     internal static readonly Dictionary<string, LunarComponent> LunarComponents = new();
 
+    internal static event Action OnComponentAssembliesLoaded;
+
     internal static void RunBootstrap()
     {
         LunarRoot.Initialize();
@@ -278,6 +280,8 @@ internal static class Entrypoint
             component.LoadedAssembly = assembly;
             provider.ModContentPack.assemblies.loadedAssemblies.Add(assembly);
             GenTypes.ClearCache();
+
+            OnComponentAssembliesLoaded?.Invoke();
 
             foreach (var modType in types)
             {
