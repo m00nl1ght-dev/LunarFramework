@@ -60,7 +60,7 @@ public abstract class LunarModSettings : ModSettings
         if (!_component.IsInitialized())
         {
             _layout.BeginRoot(rect);
-            LunarGUI.Label(_layout, "An error occured whie loading this mod. Check the log file for more information.");
+            LunarGUI.Label(_layout, "An error occured while loading this mod. Check the log file for more information.");
             _layout.End();
             return;
         }
@@ -166,6 +166,7 @@ public abstract class LunarModSettings : ModSettings
     {
         base.ExposeData();
         foreach (var entry in Entries.Values) entry.ExposeData();
+        _tabRecords = null;
     }
 
     public virtual void ResetAll()
