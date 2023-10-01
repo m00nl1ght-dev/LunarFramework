@@ -14,6 +14,8 @@ public class PatchGroup : IPatchGroup
     public string Name { get; }
 
     public bool Active => _subscribers.Count > 0;
+    
+    public bool Applied { get; private set; }
 
     public IEnumerable<Type> OwnPatchClasses => _ownPatchClasses;
     public IEnumerable<IPatchGroup> OwnSubGroups => _ownSubGroups;
@@ -26,7 +28,6 @@ public class PatchGroup : IPatchGroup
     private readonly float _unpatchDelay;
 
     private readonly Harmony _harmony;
-    private bool _patchesApplied;
 
     public PatchGroup(string name, float unpatchDelay = 0f)
     {
@@ -47,7 +48,7 @@ public class PatchGroup : IPatchGroup
     {
         if (_ownPatchClasses.Add(patchClass))
         {
-            if (_patchesApplied)
+            if (Applied)
             {
                 TryPatch(patchClass);
             }
@@ -140,9 +141,9 @@ public class PatchGroup : IPatchGroup
 
     private void TryPatch()
     {
-        if (Active && !_patchesApplied)
+        if (Active && !Applied)
         {
-            _patchesApplied = true;
+            Applied = true;
             foreach (var patchClass in _ownPatchClasses)
             {
                 TryPatch(patchClass);
@@ -167,14 +168,14 @@ public class PatchGroup : IPatchGroup
     {
         void DoUnpatch()
         {
-            if (!Active && _patchesApplied)
+            if (!Active && Applied)
             {
-                _patchesApplied = false;
+                Applied = false;
                 _harmony.UnpatchAll(_harmony.Id);
             }
         }
 
-        if (!Active && _patchesApplied)
+        if (!Active && Applied)
         {
             if (LunarRoot.IsReady)
             {
