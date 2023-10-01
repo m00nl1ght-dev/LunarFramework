@@ -97,7 +97,7 @@ internal static class Entrypoint
             var minVersion = ParseVersion(mod.Manifest.MinGameVersion);
             if (VersionControl.CurrentVersion < minVersion)
             {
-                OnError(mod, "it requires RimWorld version " + minVersion + " or later.", false);
+                OnGameOutdated(mod, minVersion);
                 return;
             }
         }
@@ -421,6 +421,22 @@ internal static class Entrypoint
         {
             LunarRoot.Logger.Error(message);
         }
+    }
+
+    private static void OnGameOutdated(LunarMod mod, Version minVersion)
+    {
+        OnError(mod, "it requires RimWorld version " + minVersion + " or later.", false);
+
+        string popupMessage = $"Failed to load mod '{mod.ModContentPack?.Name}' because it " +
+                              $"requires RimWorld version {minVersion} or newer. You currently have RimWorld " +
+                              $"version {VersionControl.CurrentVersionString}, please update the game. \n\n" +
+                              "If you are using Steam, make sure that there is no old beta channel selected. \n" +
+                              "[ RimWorld -> Properties -> Betas -> Beta Participation -> set to None ]";
+                
+        LifecycleHooks.InternalInstance.DoOnceOnMainMenu(() =>
+        {
+            Find.WindowStack.Add(new Dialog_MessageBox(popupMessage));
+        });
     }
 
     private static void ShowMessageAfterStartup(ModContentPack linkedMod, string message)
