@@ -186,10 +186,11 @@ public static class LunarGUI
             Checkbox(layout.Abs(Text.LineHeight), ref enabled, true);
 
             layout.PopEnabled();
-            if (layout.PopChanged())
+            
+            if (layout.PopChanged() && toggle != null)
             {
-                if (enabled) toggle?.Remove(item);
-                else toggle?.Add(item);
+                if (toggle.Contains(item)) toggle.Remove(item);
+                else toggle.Add(item);
             }
 
             layout.Abs(5f);
@@ -262,6 +263,7 @@ public static class LunarGUI
             InitialSize = initialSize;
             OnGUI = onGUI;
             doCloseX = true;
+            absorbInputAroundWindow = true;
         }
 
         public override void DoWindowContents(Rect rect)
