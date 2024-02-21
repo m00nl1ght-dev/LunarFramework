@@ -29,7 +29,7 @@ public static class LunarGUI
     }
 
     public static bool Button(LayoutRect layout, string label, string tooltip = null)
-        => Button(layout.Abs(layout.Horizontal ? -1f : 30f), label, tooltip);
+        => Button(layout.Abs(layout.Horizontal ? -1f : 28f), label, tooltip);
 
     public static bool Button(Rect rect, string label, string tooltip = null)
     {
@@ -94,7 +94,7 @@ public static class LunarGUI
     public static void RangeSlider(Rect rect, ref FloatRange floatRange, float min, float max)
     {
         var before = floatRange;
-        Widgets.FloatRange(rect, rect.GetHashCode(), ref floatRange, min, max);
+        Widgets.FloatRange(rect.ContractedBy(2f, 0f), rect.GetHashCode(), ref floatRange, min, max);
         if (floatRange != before) UnityEngine.GUI.changed = true;
     }
 
@@ -104,7 +104,7 @@ public static class LunarGUI
     public static void RangeSlider(Rect rect, ref FloatRange floatRange, float min, float max, Func<float, string> toString)
     {
         var before = floatRange;
-        Patch_Verse_Widgets.FloatRange_Custom(rect, rect.GetHashCode(), ref floatRange, min, max, toString);
+        Patch_Verse_Widgets.FloatRange_Custom(rect.ContractedBy(2f, 0f), rect.GetHashCode(), ref floatRange, min, max, toString);
         if (floatRange != before) UnityEngine.GUI.changed = true;
     }
 
@@ -186,7 +186,7 @@ public static class LunarGUI
             Checkbox(layout.Abs(Text.LineHeight), ref enabled, true);
 
             layout.PopEnabled();
-            
+
             if (layout.PopChanged() && toggle != null)
             {
                 if (toggle.Contains(item)) toggle.Remove(item);
