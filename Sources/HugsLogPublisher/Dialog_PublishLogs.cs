@@ -26,7 +26,6 @@ internal class Dialog_PublishLogs : Window
     {
         { LogPublisher.PublisherStatus.Ready, new StatusLabelEntry("", false) },
         { LogPublisher.PublisherStatus.Uploading, new StatusLabelEntry("HugsLogPublisher.uploading", true) },
-        { LogPublisher.PublisherStatus.Shortening, new StatusLabelEntry("HugsLogPublisher.shortening", true) },
         { LogPublisher.PublisherStatus.Done, new StatusLabelEntry("HugsLogPublisher.uploaded", false) },
         { LogPublisher.PublisherStatus.Error, new StatusLabelEntry("HugsLogPublisher.uploadError", false) }
     };
@@ -110,8 +109,7 @@ internal class Dialog_PublishLogs : Window
 
         var bottomRightBtnRect = new Rect(inRect.width - _controlButtonSize.x, inRect.height - _controlButtonSize.y,
             _controlButtonSize.x, _controlButtonSize.y);
-        if (_publisher.Status == LogPublisher.PublisherStatus.Uploading ||
-            _publisher.Status == LogPublisher.PublisherStatus.Shortening)
+        if (_publisher.Status == LogPublisher.PublisherStatus.Uploading)
         {
             if (Widgets.ButtonText(bottomRightBtnRect, "HugsLogPublisher.abortBtn".Translate()))
             {

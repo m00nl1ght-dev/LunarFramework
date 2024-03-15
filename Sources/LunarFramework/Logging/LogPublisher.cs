@@ -9,8 +9,8 @@ public static class LogPublisher
 
     static LogPublisher()
     {
-        ShowPublishPromptAction = TryReflectHugsLib();
-        ShowPublishPromptAction ??= TryReflectStandalone();
+        ShowPublishPromptAction = TryReflectStandalone();
+        ShowPublishPromptAction ??= TryReflectHugsLib();
     }
 
     public static bool TryShowPublishPrompt()

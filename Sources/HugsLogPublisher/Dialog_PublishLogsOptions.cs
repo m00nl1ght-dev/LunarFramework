@@ -74,14 +74,8 @@ internal class Dialog_PublishLogsOptions : Window
         if (_options.UseCustomOptions)
         {
             const float indent = gapSize * 2f;
-            _options.UseUrlShortener = AddOptionCheckbox(l, "HugsLogPublisher.shortUrls",
-                "HugsLogPublisher.shortUrls_tip", _options.UseUrlShortener, out _, indent);
             _options.IncludePlatformInfo = AddOptionCheckbox(l, "HugsLogPublisher.platformInfo",
                 "HugsLogPublisher.platformInfo_tip", _options.IncludePlatformInfo, out _, indent);
-            _options.AllowUnlimitedLogSize = AddOptionCheckbox(l, "HugsLogPublisher.unlimitedLogSize",
-                "HugsLogPublisher.unlimitedLogSize_tip", _options.AllowUnlimitedLogSize, out _, indent);
-            _options.AuthToken = AddOptionTextField(l, "HugsLogPublisher.githubToken",
-                "HugsLogPublisher.githubToken_tip", _options.AuthToken, indent);
         }
 
         l.End();
@@ -149,7 +143,7 @@ internal class Dialog_PublishLogsOptions : Window
 
     private void UpdateWindowSize()
     {
-        const int numHiddenOptions = 4;
+        const int numHiddenOptions = 1;
         float extraWindowHeight =
             _options.UseCustomOptions ? (Text.LineHeight + ToggleVerticalSpacing) * numHiddenOptions : 0;
         windowRect = new Rect(windowRect.x, windowRect.y, InitialSize.x, InitialSize.y + extraWindowHeight);

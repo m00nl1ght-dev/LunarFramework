@@ -116,7 +116,7 @@ internal static class HugsLibUtility
     /// <param name="successStatus">The expected status code in the response for the request to be considered successful</param>
     /// <param name="timeout">How long to wait before aborting the request</param>
     internal static void AwaitUnityWebResponse(
-        UnityWebRequest request, Action<string> onSuccess, Action<Exception> onFailure,
+        UnityWebRequest request, Action<string> onSuccess, Action<string> onFailure,
         HttpStatusCode successStatus = HttpStatusCode.OK, float timeout = 30f)
     {
         /* iTodo: scrap whole method, revert to System.Net.WebClient
@@ -143,38 +143,38 @@ internal static class HugsLibUtility
                         request.Abort();
                     }
 
-                    throw new Exception("timed out");
+                    throw new Exception("Request timed out");
                 }
 
-                if (request.isNetworkError || request.isHttpError)
+                if (request.isNetworkError)
                 {
-                    throw new Exception(request.error);
+                    throw new Exception("Network error: " + request.error);
                 }
 
                 var status = (HttpStatusCode) request.responseCode;
+
                 if (status != successStatus)
                 {
-                    throw new Exception($"{request.url} replied with {status}: {request.downloadHandler.text}");
+                    if (!string.IsNullOrEmpty(request.downloadHandler.text))
+                        throw new Exception(request.downloadHandler.text);
+
+                    if (request.isHttpError)
+                        throw new Exception(request.error);
+
+                    throw new Exception($"HTTP {status}");
                 }
 
-                onSuccess?.Invoke(request.downloadHandler.text);
+                onSuccess.Invoke(request.downloadHandler.text);
             }
             catch (Exception e)
             {
-                if (onFailure != null)
-                {
-                    onFailure(e);
-                }
-                else
-                {
-                    LogPublisher.LunarAPI.LogContext.Warn("UnityWebRequest failed", e);
-                }
+                onFailure.Invoke(e.Message);
             }
 
             return false;
         }
 
-        LogPublisher.LunarAPI.LifecycleHooks.DoWhile(PollingAction);
+        LogPublisherEntrypoint.LunarAPI.LifecycleHooks.DoWhile(PollingAction);
     }
 
     internal static string FullName(this MethodBase methodInfo)

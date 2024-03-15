@@ -68,11 +68,14 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="AssemblyVersionInfo.cs" />
+        <Compile Include="Compatibility\ModCompat_HugsLib.cs" />
         <Compile Include="Dialog_PublishLogs.cs" />
         <Compile Include="Dialog_PublishLogsOptions.cs" />
         <Compile Include="HarmonyUtility.cs" />
         <Compile Include="HugsLibUtility.cs" />
+        <Compile Include="LogDataGatherer.cs" />
         <Compile Include="LogPublisher.cs" />
+        <Compile Include="LogPublisherEntrypoint.cs" />
         <Compile Include="LogPublisherOptions.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
