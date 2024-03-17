@@ -183,7 +183,7 @@ internal static class LogDataGatherer
     private static string RedactSteamId(string log)
     {
         const string idReplacement = "[Steam Id redacted]";
-        return Regex.Replace(log, "Steam_SetMinidumpSteamID.+", idReplacement);
+        return Regex.Replace(log, ".+SetMinidumpSteamID.+", idReplacement);
     }
 
     private static string RedactHomeDirectoryPaths(string log)
@@ -192,7 +192,6 @@ internal static class LogDataGatherer
         var homePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         return Regex.Replace(log, Regex.Escape(homePath), pathReplacement, RegexOptions.IgnoreCase);
     }
-
 
     private static string RedactRimworldPaths(string log)
     {

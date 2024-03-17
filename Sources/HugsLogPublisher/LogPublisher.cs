@@ -1,10 +1,9 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Text;
 using LunarFramework;
 using RimWorld;
-using UnityEngine;
-using UnityEngine.Networking;
 using Verse;
 
 namespace HugsLogPublisher;
@@ -30,17 +29,15 @@ public class LogPublisher
 
     private const string RequestUserAgent = "RimWorldLogPublisher";
 
-    private const float PublishRequestTimeout = 90f;
-
-    private UnityWebRequest _activeRequest;
     private int _requestNum;
 
     private LogPublisherOptions _publishOptions = new();
-    private bool _userAborted;
 
     public PublisherStatus Status { get; private set; }
     public string ErrorMessage { get; private set; }
     public string ResultUrl { get; private set; }
+
+    private WebClient _webClient;
 
     private LogPublisher() {}
 
@@ -67,14 +64,13 @@ public class LogPublisher
     public void AbortUpload()
     {
         if (Status != PublisherStatus.Uploading) return;
-        _userAborted = true;
 
-        if (_activeRequest is { isDone: false })
+        if (_webClient is { IsBusy: true })
         {
-            _activeRequest.Abort();
+            _webClient.CancelAsync();
+            _webClient.Dispose();
+            _webClient = null;
         }
-
-        _activeRequest = null;
 
         ErrorMessage = "Aborted by user";
         FinalizeUpload(false);
@@ -86,42 +82,69 @@ public class LogPublisher
 
         Status = PublisherStatus.Uploading;
         ErrorMessage = null;
-        _userAborted = false;
 
-        var content = LogDataGatherer.PrepareLogData(_publishOptions);
+        var data = LogDataGatherer.PrepareLogData(_publishOptions);
 
-        if (content == null)
+        if (data == null)
         {
             ErrorMessage = "Failed to collect data";
             FinalizeUpload(false);
             return;
         }
 
-        void OnRequestFailed(string message)
-        {
-            if (_userAborted) return;
-            OnRequestError(message);
-            Log.Warning("Exception during log publishing: " + message);
-        }
-
         try
         {
-            _activeRequest = new UnityWebRequest($"https://{GatewaySdn}.dev:{GatewayPdn}/{GatewayEnp}", UnityWebRequest.kHttpVerbPOST);
-            _activeRequest.SetRequestHeader("RW-Version", VersionControl.CurrentVersion.ToString());
-            _activeRequest.SetRequestHeader("LF-Version", typeof(LunarAPI).Assembly.GetName().Version.ToString());
-            _activeRequest.SetRequestHeader("UL-Version", typeof(LogPublisher).Assembly.GetName().Version.ToString());
-            _activeRequest.SetRequestHeader("Request-Idx", $"{_requestNum++}");
-            _activeRequest.SetRequestHeader("User-Agent", RequestUserAgent);
-            _activeRequest.SetRequestHeader("Nonce", $"{163774*2334:X}");
-            _activeRequest.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(content)) { contentType = "text/plain" };
-            _activeRequest.downloadHandler = new DownloadHandlerBuffer();
-            HugsLibUtility.AwaitUnityWebResponse(_activeRequest, OnUploadComplete, OnRequestFailed, HttpStatusCode.OK, PublishRequestTimeout);
+            _webClient = new WebClient();
+            _webClient.Encoding = Encoding.UTF8;
+            _webClient.Headers.Set("User-Agent", RequestUserAgent);
+            _webClient.Headers.Set("RW-Version", VersionControl.CurrentVersion.ToString());
+            _webClient.Headers.Set("LF-Version", typeof(LunarAPI).Assembly.GetName().Version.ToString());
+            _webClient.Headers.Set("UL-Version", typeof(LogPublisher).Assembly.GetName().Version.ToString());
+            _webClient.Headers.Set("Request-Idx", $"{_requestNum++}");
+            _webClient.Headers.Set("Nonce", $"{163774 * 2334:X}");
+            _webClient.UploadStringCompleted += WebClientCallback;
+            _webClient.UploadStringAsync(new Uri($"https://{GatewaySdn}.dev:{GatewayPdn}/{GatewayEnp}"), data);
         }
         catch (Exception e)
         {
-            Debug.Log(e);
-            OnRequestFailed(e.Message);
+            OnUploadError(e.Message);
         }
+    }
+
+    private void WebClientCallback(object sender, UploadStringCompletedEventArgs result)
+    {
+        if (result.Cancelled) return;
+
+        if (result.Error == null)
+        {
+            LogPublisherEntrypoint.LunarAPI.LifecycleHooks.DoOnce(() => OnUploadComplete(result.Result));
+            return;
+        }
+
+        var message = result.Error.Message;
+
+        if (result.Error is WebException exc)
+        {
+            using var stream = exc.Response?.GetResponseStream();
+
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream);
+                message = reader.ReadToEnd();
+            }
+            else
+            {
+                message = exc.Status switch
+                {
+                    WebExceptionStatus.ConnectFailure => "Could not connect to server",
+                    WebExceptionStatus.NameResolutionFailure => "Could not connect to server",
+                    WebExceptionStatus.Timeout => "Request timed out",
+                    _ => exc.Status.ToString()
+                };
+            }
+        }
+
+        LogPublisherEntrypoint.LunarAPI.LifecycleHooks.DoOnce(() => OnUploadError(message));
     }
 
     public void CopyToClipboard()
@@ -142,9 +165,10 @@ public class LogPublisher
         Find.WindowStack.Add(new Dialog_PublishLogs(this));
     }
 
-    private void OnRequestError(string errorMessage)
+    private void OnUploadError(string message)
     {
-        ErrorMessage = errorMessage;
+        ErrorMessage = message;
+        LogPublisherEntrypoint.Logger.Warn("Error during log upload: " + message);
         FinalizeUpload(false);
     }
 
@@ -152,7 +176,7 @@ public class LogPublisher
     {
         if (string.IsNullOrEmpty(response))
         {
-            OnRequestError("Failed to parse response");
+            OnUploadError("Failed to parse response");
             return;
         }
 
@@ -163,7 +187,9 @@ public class LogPublisher
     private void FinalizeUpload(bool success)
     {
         Status = success ? PublisherStatus.Done : PublisherStatus.Error;
-        _activeRequest = null;
+
+        _webClient?.Dispose();
+        _webClient = null;
     }
 
     private bool PublisherIsReady()

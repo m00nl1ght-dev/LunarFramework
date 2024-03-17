@@ -2,13 +2,11 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using System.Text;
 using JetBrains.Annotations;
 using RimWorld;
 using UnityEngine;
-using UnityEngine.Networking;
 using Verse;
 
 namespace HugsLogPublisher;
@@ -105,76 +103,6 @@ internal static class HugsLibUtility
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// Sends a constructed UnityWebRequest, waits for the result, and returns the data via callbacks.
-    /// </summary>
-    /// <param name="request">Use UnityWebRequest or WWW to construct a request. Do not call Send().</param>
-    /// <param name="onSuccess">Called with the response body if server replied with status 200.</param>
-    /// <param name="onFailure">Called with the error message in case of a network error or if server replied with status other than 200.</param>
-    /// <param name="successStatus">The expected status code in the response for the request to be considered successful</param>
-    /// <param name="timeout">How long to wait before aborting the request</param>
-    internal static void AwaitUnityWebResponse(
-        UnityWebRequest request, Action<string> onSuccess, Action<string> onFailure,
-        HttpStatusCode successStatus = HttpStatusCode.OK, float timeout = 30f)
-    {
-        /* iTodo: scrap whole method, revert to System.Net.WebClient
-        .NET version has been updated and SSL should work again */
-        #pragma warning disable 618
-        request.Send();
-        #pragma warning restore 618
-        var timeoutTime = Time.unscaledTime + timeout;
-
-        bool PollingAction()
-        {
-            var timedOut = Time.unscaledTime > timeoutTime;
-            try
-            {
-                if (!request.isDone && !timedOut)
-                {
-                    return true;
-                }
-
-                if (timedOut)
-                {
-                    if (!request.isDone)
-                    {
-                        request.Abort();
-                    }
-
-                    throw new Exception("Request timed out");
-                }
-
-                if (request.isNetworkError)
-                {
-                    throw new Exception("Network error: " + request.error);
-                }
-
-                var status = (HttpStatusCode) request.responseCode;
-
-                if (status != successStatus)
-                {
-                    if (!string.IsNullOrEmpty(request.downloadHandler.text))
-                        throw new Exception(request.downloadHandler.text);
-
-                    if (request.isHttpError)
-                        throw new Exception(request.error);
-
-                    throw new Exception($"HTTP {status}");
-                }
-
-                onSuccess.Invoke(request.downloadHandler.text);
-            }
-            catch (Exception e)
-            {
-                onFailure.Invoke(e.Message);
-            }
-
-            return false;
-        }
-
-        LogPublisherEntrypoint.LunarAPI.LifecycleHooks.DoWhile(PollingAction);
     }
 
     internal static string FullName(this MethodBase methodInfo)
