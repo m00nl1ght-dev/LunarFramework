@@ -179,13 +179,38 @@ internal static class Entrypoint
                 return;
             }
 
+            var aliases = componentDef.Aliases ?? [];
+            var dependsOn = componentDef.DependsOn ?? [];
+
             var component = LunarComponents.TryGetValue(componentDef.AssemblyName);
-            component ??= new LunarComponent(componentDef.AssemblyName, LunarComponents.Count);
+
+            if (component == null)
+            {
+                component = new LunarComponent(componentDef.AssemblyName, LunarComponents.Count);
+                component.AliasesInternal.AddRange(aliases);
+                component.AllowNonLunarSource = componentDef.AllowNonLunarSource;
+                LunarComponents[componentDef.AssemblyName] = component;
+            }
+            else
+            {
+                if (component.AllowNonLunarSource && !componentDef.AllowNonLunarSource)
+                {
+                    component.AllowNonLunarSource = false;
+                    component.AliasesInternal.Clear();
+                }
+
+                if (component.AllowNonLunarSource)
+                {
+                    component.AliasesInternal.RemoveWhere(a => !aliases.Contains(a));
+                }
+                else if (!componentDef.AllowNonLunarSource)
+                {
+                    component.AliasesInternal.AddRange(aliases);
+                }
+            }
+
+            component.DependsOnInternal.AddRange(dependsOn);
             component.ProvidedVersionsInternal[mod] = assemblyVersion;
-            if (componentDef.Aliases != null) component.AliasesInternal.AddRange(componentDef.Aliases);
-            if (componentDef.DependsOn != null) component.DependsOnInternal.AddRange(componentDef.DependsOn);
-            if (!componentDef.AllowNonLunarSource) component.AllowNonLunarSource = false;
-            LunarComponents[componentDef.AssemblyName] = component;
         }
     }
 
@@ -432,7 +457,7 @@ internal static class Entrypoint
                               $"version {VersionControl.CurrentVersionString}, please update the game. \n\n" +
                               "If you are using Steam, make sure that there is no old beta channel selected. \n" +
                               "[ RimWorld -> Properties -> Betas -> Beta Participation -> set to None ]";
-                
+
         LifecycleHooks.InternalInstance.DoOnceOnMainMenu(() =>
         {
             Find.WindowStack.Add(new Dialog_MessageBox(popupMessage));
