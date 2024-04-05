@@ -19,6 +19,7 @@ internal class LunarRoot : MonoBehaviour
     internal static readonly PatchGroup BootstrapPatchGroup = new("LunarFramework.Bootstrap");
 
     internal static event Action DoOnceOnUpdate;
+    internal static event Action DoOnceOnMainMenu;
 
     internal static event Action DoOnGUI;
     internal static event Action DoOnQuit;
@@ -58,6 +59,11 @@ internal class LunarRoot : MonoBehaviour
     internal static void RunCoroutine(IEnumerator coroutine)
     {
         DoOnceOnUpdate += () => Instance.StartCoroutine(coroutine);
+    }
+
+    internal static void OnMainMenuReady()
+    {
+        Interlocked.Exchange(ref DoOnceOnMainMenu, null)?.Invoke();
     }
 
     private void Update()

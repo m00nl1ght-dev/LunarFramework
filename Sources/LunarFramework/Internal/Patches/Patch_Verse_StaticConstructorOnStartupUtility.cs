@@ -1,34 +1,22 @@
-using System;
-using System.Reflection;
 using HarmonyLib;
 using LunarFramework.Bootstrap;
+using LunarFramework.Internal.Compatibility;
 using LunarFramework.Patching;
 using Verse;
 
 namespace LunarFramework.Internal.Patches;
 
 [PatchGroup("Bootstrap")]
-[HarmonyPatch]
+[HarmonyPatch(typeof(StaticConstructorOnStartupUtility))]
 internal static class Patch_Verse_StaticConstructorOnStartupUtility
 {
-    internal static MethodBase TargetMethodOverride;
-
-    [HarmonyTargetMethod]
-    private static MethodBase TargetMethod()
-    {
-        return TargetMethodOverride ?? AccessTools.Method(typeof(StaticConstructorOnStartupUtility), "CallAll");
-    }
+    [HarmonyPrepare]
+    private static bool PatchCondition() => !ModCompat_BetterLoading.IsPresent;
 
     [HarmonyPostfix]
-    private static void LateInit()
+    [HarmonyPatch(nameof(StaticConstructorOnStartupUtility.CallAll))]
+    private static void CallAll_Postfix()
     {
-        try
-        {
-            Entrypoint.OnPlayDataLoadFinished();
-        }
-        catch (Exception e)
-        {
-            LunarRoot.Logger.Fatal("Exception in OnPlayDataLoadFinished", e);
-        }
+        Entrypoint.OnPlayDataLoadFinished();
     }
 }

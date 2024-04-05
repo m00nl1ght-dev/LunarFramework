@@ -348,23 +348,34 @@ internal static class Entrypoint
     }
 
     /// <summary>
-    /// Called after static constructors.
-    /// May be called multiple times, and must be able to handle that.
+    /// Called when game startup is nearly finished. May be called multiple times:
+    /// - Once directly after static constructors (only if BetterLoading is not present)
+    /// - Once when PlayDataLoader is fully finished (for redundancy and BetterLoading support)
+    /// - Possibly again when game data is reloaded (e.g. language change)
     /// </summary>
     internal static void OnPlayDataLoadFinished()
     {
-        LunarRoot.CreateInstance();
-        LunarRoot.BootstrapPatchGroup.UnsubscribeAll();
+        if (LunarRoot.Instance != null) return;
 
-        foreach (var component in LunarComponents.Values.OrderBy(m => m.SortOrderIdx))
+        try
         {
-            if (component.LoadingState != LoadingState.Loaded) continue;
-            InitComponent(component);
+            LunarRoot.CreateInstance();
+            LunarRoot.BootstrapPatchGroup.UnsubscribeAll();
+
+            foreach (var component in LunarComponents.Values.OrderBy(m => m.SortOrderIdx))
+            {
+                if (component.LoadingState != LoadingState.Loaded) continue;
+                InitComponent(component);
+            }
+
+            foreach (var mod in LunarMods.Values.Where(m => m.LoadingState == LoadingState.Loaded))
+            {
+                mod.LoadingState = LoadingState.Initialized;
+            }
         }
-
-        foreach (var mod in LunarMods.Values.Where(m => m.LoadingState == LoadingState.Loaded))
+        catch (Exception e)
         {
-            mod.LoadingState = LoadingState.Initialized;
+            LunarRoot.Logger.Fatal("Exception during framework initialization", e);
         }
     }
 

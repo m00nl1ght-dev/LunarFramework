@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using LunarFramework.Internal;
-using LunarFramework.Internal.Patches;
 using UnityEngine;
 
 namespace LunarFramework.Utility;
@@ -52,7 +51,7 @@ public class LifecycleHooks
 
     public void DoOnceOnMainMenu(Action action)
     {
-        Patch_RimWorld_MainMenuDrawer.OnMainMenuReady += action;
+        LunarRoot.DoOnceOnMainMenu += action;
     }
 
     public void DoOnceOnShutdown(Action action)

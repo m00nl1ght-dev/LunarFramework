@@ -1,6 +1,3 @@
-using System;
-using System.Reflection;
-using System.Threading;
 using HarmonyLib;
 using LunarFramework.Patching;
 using RimWorld;
@@ -8,22 +5,13 @@ using RimWorld;
 namespace LunarFramework.Internal.Patches;
 
 [PatchGroup("Main")]
-[HarmonyPatch]
+[HarmonyPatch(typeof(MainMenuDrawer))]
 internal static class Patch_RimWorld_MainMenuDrawer
 {
-    internal static event Action OnMainMenuReady;
-
-    internal static MethodBase TargetMethodOverride;
-
-    [HarmonyTargetMethod]
-    private static MethodBase TargetMethod()
-    {
-        return TargetMethodOverride ?? AccessTools.Method(typeof(MainMenuDrawer), "Init");
-    }
-
     [HarmonyPostfix]
-    private static void MenuReady()
+    [HarmonyPatch(nameof(MainMenuDrawer.Init))]
+    private static void Init_Postfix()
     {
-        Interlocked.Exchange(ref OnMainMenuReady, null)?.Invoke();
+        LunarRoot.OnMainMenuReady();
     }
 }
