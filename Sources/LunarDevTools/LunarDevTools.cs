@@ -38,8 +38,7 @@ public class LunarDevTools : Mod
         }
         catch (Exception e)
         {
-            Log.Error(LogPrefix + "Failed to create check files.");
-            Debug.LogException(e);
+            Log.Error(LogPrefix + "Failed to create check files\n" + e);
         }
     }
 

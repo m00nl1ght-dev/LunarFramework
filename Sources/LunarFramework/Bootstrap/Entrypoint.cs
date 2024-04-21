@@ -13,7 +13,6 @@ using LunarFramework.Utility;
 using RimWorld;
 using UnityEngine;
 using Verse;
-using Debug = UnityEngine.Debug;
 
 namespace LunarFramework.Bootstrap;
 
@@ -396,7 +395,7 @@ internal static class Entrypoint
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                LunarRoot.Logger.Error("Exception occured in cleanup action", ex);
             }
         }
     }

@@ -21,6 +21,11 @@ public class IngameLogContext : LogContext
             Verse.Log.ResetMessageCount();
         }
 
+        if (exception != null)
+        {
+            message += "\n" + exception;
+        }
+
         switch (level)
         {
             case LogLevel.Debug or LogLevel.Info:
@@ -34,11 +39,6 @@ public class IngameLogContext : LogContext
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(level), level, null);
-        }
-
-        if (exception != null)
-        {
-            UnityEngine.Debug.LogException(exception);
         }
     }
 }

@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using Verse;
-using Debug = UnityEngine.Debug;
 
 namespace LunarLoader;
 
@@ -39,8 +38,7 @@ public class LunarLoader : Mod
         }
         catch (Exception e)
         {
-            LogError(mcp, "an error occured while loading the framework.");
-            Debug.LogException(e);
+            LogError(mcp, "an error occured while loading the framework:\n" + e);
         }
     }
 
