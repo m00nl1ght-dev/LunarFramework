@@ -1,65 +1,28 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-        <ProjectGuid>{37999EC1-1A27-4841-967B-F264646581BD}</ProjectGuid>
         <OutputType>Library</OutputType>
-        <AppDesignerFolder>Properties</AppDesignerFolder>
+        <TargetFramework>net472</TargetFramework>
+        <PlatformTarget>x64</PlatformTarget>
+        <LangVersion>default</LangVersion>
+
         <RootNamespace>LunarLoader</RootNamespace>
         <AssemblyName>LunarLoader</AssemblyName>
-        <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-        <FileAlignment>512</FileAlignment>
-        <LangVersion>default</LangVersion>
+
+        <Version>1.1.7</Version>
+
+        <Copyright>Copyright © 2024 m00nl1ght &lt;https://github.com/m00nl1ght-dev&gt;</Copyright>
     </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-        <PlatformTarget>AnyCPU</PlatformTarget>
-        <DebugSymbols>false</DebugSymbols>
-        <DebugType>none</DebugType>
-        <Optimize>false</Optimize>
-        <OutputPath>..\..\..\Geological Landforms\1.4\Assemblies\</OutputPath>
-        <DefineConstants>DEBUG;TRACE</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-        <PlatformTarget>AnyCPU</PlatformTarget>
-        <DebugType>none</DebugType>
-        <Optimize>false</Optimize>
-        <OutputPath>..\..\..\Geological Landforms\1.4\Assemblies\</OutputPath>
-        <DefineConstants>TRACE</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
+
     <ItemGroup>
-        <Reference Include="Assembly-CSharp">
-          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
-          <Private>False</Private>
-        </Reference>
-        <Reference Include="System" />
-        <Reference Include="System.Core" />
-        <Reference Include="System.Data" />
-        <Reference Include="System.Xml" />
-        <Reference Include="UnityEngine.CoreModule">
-          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-          <Private>False</Private>
+        <Reference Include="Assembly-CSharp" Private="false">
+            <HintPath>$(RimWorldPath)\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
         </Reference>
     </ItemGroup>
+
     <ItemGroup>
-        <Compile Include="LunarLoader.cs" />
-        <Compile Include="Properties\AssemblyInfo.cs" />
+        <EmitToDirectory Include="..\..\..\MapPreview\$(RimWorldVersion)\Assemblies\"/>
+        <EmitToDirectory Include="..\..\..\GeologicalLandforms\$(RimWorldVersion)\Assemblies\"/>
+        <EmitToDirectory Include="..\..\..\HugsLogPublisher\$(RimWorldVersion)\Assemblies\"/>
     </ItemGroup>
-    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-    <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-         Other similar extension points exist, see Microsoft.Common.targets.
-    <Target Name="BeforeBuild">
-    </Target>
-    <Target Name="AfterBuild">
-    </Target>
-    -->
-    <PropertyGroup>
-        <PostBuildEvent>xcopy "$(TargetDir)$(TargetName).dll" "$(ProjectDir)..\..\..\Map Preview\1.4\Assemblies\" /F /Y
-xcopy "$(TargetDir)$(TargetName).dll" "$(ProjectDir)..\..\..\HugsLogPublisher\1.4\Assemblies\" /F /Y</PostBuildEvent>
-    </PropertyGroup>
 </Project>

@@ -143,7 +143,7 @@ internal static class Entrypoint
 
         foreach (var file in ModContentPack.GetAllFilesForModPreserveOrder(mod.ModContentPack, "Assemblies/"))
         {
-            if (!file.Item2.Name.Equals(LunarMod.LoaderAssemblyFileName))
+            if (!file.Item2.Name.Equals(LunarMod.LoaderAssemblyFileName) && !file.Item2.Name.EndsWith(".pdb"))
             {
                 OnError(mod, "invalid file: " + file.Item2.Name);
                 return;
@@ -267,8 +267,7 @@ internal static class Entrypoint
 
             try
             {
-                byte[] rawAssembly = File.ReadAllBytes(assemblyFile);
-                assembly = AppDomain.CurrentDomain.Load(rawAssembly);
+                assembly = Assembly.LoadFrom(assemblyFile);
             }
             catch (Exception e)
             {

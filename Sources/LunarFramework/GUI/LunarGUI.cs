@@ -73,7 +73,12 @@ public static class LunarGUI
 
     public static void Slider(Rect rect, ref float value, float min, float max)
     {
-        var newValue = Widgets.HorizontalSlider_NewTemp(rect, value, min, max);
+        #if RW_1_4
+            var newValue = Widgets.HorizontalSlider_NewTemp(rect, value, min, max);
+        #else
+            var newValue = Widgets.HorizontalSlider(rect, value, min, max);
+        #endif
+
         if (newValue != value) UnityEngine.GUI.changed = true;
         value = newValue;
     }

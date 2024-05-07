@@ -1,119 +1,41 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-        <ProjectGuid>{3373C9F7-FEC4-4663-90FC-8639BE57AE63}</ProjectGuid>
         <OutputType>Library</OutputType>
-        <AppDesignerFolder>Properties</AppDesignerFolder>
+        <TargetFramework>net472</TargetFramework>
+        <PlatformTarget>x64</PlatformTarget>
+        <LangVersion>default</LangVersion>
+
         <RootNamespace>LunarFramework</RootNamespace>
         <AssemblyName>LunarFramework</AssemblyName>
-        <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-        <FileAlignment>512</FileAlignment>
-        <LangVersion>default</LangVersion>
-        <SignAssembly>false</SignAssembly>
+
+        <Version>1.1.7</Version>
+
+        <Copyright>Copyright © 2024 m00nl1ght &lt;https://github.com/m00nl1ght-dev&gt;</Copyright>
     </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-        <PlatformTarget>AnyCPU</PlatformTarget>
-        <DebugSymbols>false</DebugSymbols>
-        <DebugType>none</DebugType>
-        <Optimize>false</Optimize>
-        <OutputPath>..\..\..\Geological Landforms\1.4\Lunar\Components\</OutputPath>
-        <DefineConstants>DEBUG;TRACE</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-        <PlatformTarget>AnyCPU</PlatformTarget>
-        <DebugType>none</DebugType>
-        <Optimize>false</Optimize>
-        <OutputPath>..\..\..\Geological Landforms\1.4\Lunar\Components\</OutputPath>
-        <DefineConstants>TRACE</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
+
     <ItemGroup>
-        <Reference Include="0Harmony">
-          <HintPath>..\..\..\Harmony\Current\Assemblies\0Harmony.dll</HintPath>
-          <Private>False</Private>
+        <PackageReference Include="Lib.Harmony" Version="2.3.3" ExcludeAssets="runtime"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="Assembly-CSharp" Private="false">
+            <HintPath>$(RimWorldPath)\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
         </Reference>
-        <Reference Include="Assembly-CSharp">
-          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
-          <Private>False</Private>
+        <Reference Include="UnityEngine.CoreModule" Private="false">
+            <HintPath>$(RimWorldPath)\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
         </Reference>
-        <Reference Include="System" />
-        <Reference Include="System.Core" />
-        <Reference Include="System.Data" />
-        <Reference Include="System.Xml" />
-        <Reference Include="UnityEngine.CoreModule">
-          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-          <Private>False</Private>
+        <Reference Include="UnityEngine.IMGUIModule" Private="false">
+            <HintPath>$(RimWorldPath)\RimWorldWin64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
         </Reference>
-        <Reference Include="UnityEngine.IMGUIModule">
-          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
-          <Private>False</Private>
-        </Reference>
-        <Reference Include="UnityEngine.TextRenderingModule">
-          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
-          <Private>False</Private>
-        </Reference>
-        <Reference Include="UnityEngine.UnityWebRequestModule">
-          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
-          <Private>False</Private>
+        <Reference Include="UnityEngine.TextRenderingModule" Private="false">
+            <HintPath>$(RimWorldPath)\RimWorldWin64_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
         </Reference>
     </ItemGroup>
+
     <ItemGroup>
-        <Compile Include="Bootstrap\LoadingState.cs" />
-        <Compile Include="Bootstrap\LunarComponent.cs" />
-        <Compile Include="Bootstrap\Entrypoint.cs" />
-        <Compile Include="Bootstrap\LunarMod.cs" />
-        <Compile Include="Bootstrap\Manifest.cs" />
-        <Compile Include="GUI\LayoutParams.cs" />
-        <Compile Include="GUI\LayoutRect.cs" />
-        <Compile Include="GUI\LunarGUI.cs" />
-        <Compile Include="Internal\Compatibility\ModCompat_BetterLoading.cs" />
-        <Compile Include="Internal\Compatibility\ModCompat_FasterGameLoading.cs" />
-        <Compile Include="Internal\Compatibility\ModCompat_HotSwap.cs" />
-        <Compile Include="Internal\Compatibility\ModCompat_HugsLib.cs" />
-        <Compile Include="Internal\LunarRoot.cs" />
-        <Compile Include="Internal\Patches\Patch_RimWorld_MainMenuDrawer.cs" />
-        <Compile Include="Internal\Patches\Patch_Verse_StaticConstructorOnStartupUtility.cs" />
-        <Compile Include="Internal\Patches\Patch_Verse_Widgets.cs" />
-        <Compile Include="Logging\HarmonyLogContext.cs" />
-        <Compile Include="Logging\IngameLogContext.cs" />
-        <Compile Include="Logging\LogContext.cs" />
-        <Compile Include="Logging\LogPublisher.cs" />
-        <Compile Include="Patching\ModCompat.cs" />
-        <Compile Include="Patching\PatchGroup.cs" />
-        <Compile Include="Patching\IPatchGroup.cs" />
-        <Compile Include="LunarAPI.cs" />
-        <Compile Include="Patching\PatchGroupAttribute.cs" />
-        <Compile Include="Patching\PatchGroupSubscriber.cs" />
-        <Compile Include="Patching\TranspilerPattern.cs" />
-        <Compile Include="Properties\AssemblyInfo.cs" />
-        <Compile Include="Utility\CommonExtensions.cs" />
-        <Compile Include="Utility\HotSwappableAttribute.cs" />
-        <Compile Include="Utility\LifecycleHooks.cs" />
-        <Compile Include="Utility\LunarModSettings.cs" />
-        <Compile Include="Utility\RandInstance.cs" />
-        <Compile Include="Utility\ReflectionUtils.cs" />
-        <Compile Include="Utility\Rot6.cs" />
-        <Compile Include="Utility\StructRot4.cs" />
-        <Compile Include="XML\XmlDynamicValue.cs" />
-        <Compile Include="XML\XmlDynamicValueSupport.cs" />
-        <Compile Include="XML\XmlDynamicValueSpecs.cs" />
+        <EmitToDirectory Include="..\..\..\MapPreview\$(RimWorldVersion)\Lunar\Components\"/>
+        <EmitToDirectory Include="..\..\..\GeologicalLandforms\$(RimWorldVersion)\Lunar\Components\"/>
+        <EmitToDirectory Include="..\..\..\HugsLogPublisher\$(RimWorldVersion)\Lunar\Components\"/>
     </ItemGroup>
-    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-    <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-         Other similar extension points exist, see Microsoft.Common.targets.
-    <Target Name="BeforeBuild">
-    </Target>
-    <Target Name="AfterBuild">
-    </Target>
-    -->
-    <PropertyGroup>
-        <PostBuildEvent>xcopy "$(TargetDir)$(TargetName).dll" "$(ProjectDir)..\..\..\Map Preview\1.4\Lunar\Components\" /F /Y
-xcopy "$(TargetDir)$(TargetName).dll" "$(ProjectDir)..\..\..\HugsLogPublisher\1.4\Lunar\Components\" /F /Y</PostBuildEvent>
-    </PropertyGroup>
 </Project>
