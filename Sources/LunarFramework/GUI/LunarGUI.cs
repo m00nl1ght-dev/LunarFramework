@@ -74,9 +74,9 @@ public static class LunarGUI
     public static void Slider(Rect rect, ref float value, float min, float max)
     {
         #if RW_1_4
-            var newValue = Widgets.HorizontalSlider_NewTemp(rect, value, min, max);
+        var newValue = Widgets.HorizontalSlider_NewTemp(rect, value, min, max);
         #else
-            var newValue = Widgets.HorizontalSlider(rect, value, min, max);
+        var newValue = Widgets.HorizontalSlider(rect, value, min, max);
         #endif
 
         if (newValue != value) UnityEngine.GUI.changed = true;
@@ -147,9 +147,15 @@ public static class LunarGUI
     }
 
     public static void Dropdown<T>(LayoutRect layout, T value, List<T> potentialValues, Action<T> action, Func<T, string> textFunc = null)
+        => Dropdown(layout, value, potentialValues.AsEnumerable(), action, textFunc);
+
+    public static void Dropdown<T>(LayoutRect layout, T value, IEnumerable<T> potentialValues, Action<T> action, Func<T, string> textFunc = null)
         => Dropdown(layout.Abs(layout.Horizontal ? -1f : 28f), value, potentialValues, action, textFunc);
 
     public static void Dropdown<T>(Rect rect, T value, List<T> potentialValues, Action<T> action, Func<T, string> textFunc = null)
+        => Dropdown(rect, value, potentialValues.AsEnumerable(), action, textFunc);
+
+    public static void Dropdown<T>(Rect rect, T value, IEnumerable<T> potentialValues, Action<T> action, Func<T, string> textFunc = null)
     {
         textFunc ??= o => o.ToString();
         if (Widgets.ButtonText(rect, textFunc.Invoke(value)))
