@@ -51,9 +51,12 @@ public static class LunarGUI
     public static void Checkbox(Rect rect, ref bool value, string label, string tooltip = null)
     {
         if (LanguageDatabase.activeLanguage != LanguageDatabase.defaultLanguage) tooltip ??= label;
-        HighlightOnHover(rect);
         if (tooltip != null) TooltipHandler.TipRegion(rect, tooltip);
+
+        var before = value;
+        HighlightOnHover(rect);
         Widgets.CheckboxLabeled(rect, label, ref value, !UnityEngine.GUI.enabled);
+        if (value != before) UnityEngine.GUI.changed = true;
     }
 
     public static void TextField(LayoutRect layout, ref string value)
