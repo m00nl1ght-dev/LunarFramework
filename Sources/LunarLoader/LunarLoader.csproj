@@ -9,7 +9,7 @@
         <RootNamespace>LunarLoader</RootNamespace>
         <AssemblyName>LunarLoader</AssemblyName>
 
-        <Version>1.1.9</Version>
+        <Version>1.1.10</Version>
 
         <Copyright>Copyright © 2024 m00nl1ght &lt;https://github.com/m00nl1ght-dev&gt;</Copyright>
     </PropertyGroup>
