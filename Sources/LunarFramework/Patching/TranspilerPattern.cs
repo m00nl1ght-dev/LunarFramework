@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
 using LunarFramework.Logging;
@@ -10,21 +11,21 @@ namespace LunarFramework.Patching;
 public class TranspilerPattern
 {
     private static readonly HarmonyLogContext Logger = new(typeof(TranspilerPattern));
-    
+
     public string Name { get; }
 
-    protected internal bool IsGreedy { get; private set; }
+    internal bool IsGreedy { get; private set; }
 
-    protected internal int MinOccurences { get; private set; } = 1;
-    protected internal int MaxOccurences { get; private set; } = 1;
+    internal int MinOccurrences { get; private set; } = 1;
+    internal int MaxOccurrences { get; private set; } = 1;
 
-    protected internal List<CodeInstruction> InsertBefore { get; set; }
-    protected internal List<RelativeMatchCondition> OnlyAfter { get; set; }
+    internal List<Insertion> InsertBefore { get; } = [];
+    internal List<RelativeMatchCondition> OnlyAfter { get; } = [];
 
-    protected internal bool ShouldTrimBefore { get; private set; }
-    protected internal bool ShouldTrimAfter { get; private set; }
+    internal bool ShouldTrimBefore { get; private set; }
+    internal bool ShouldTrimAfter { get; private set; }
 
-    protected readonly List<Element> Elements = new();
+    internal readonly List<Element> Elements = [];
 
     internal TranspilerPattern(string name)
     {
@@ -33,12 +34,12 @@ public class TranspilerPattern
 
     public static TranspilerPattern Build(string name) => new(name);
 
-    public static List<Occurence> Find(IEnumerable<CodeInstruction> instructions, params TranspilerPattern[] patterns)
+    public static List<Occurrence> Find(IEnumerable<CodeInstruction> instructions, params TranspilerPattern[] patterns)
         => Find(instructions.ToList(), patterns);
 
-    public static List<Occurence> Find(List<CodeInstruction> instructions, params TranspilerPattern[] patterns)
+    public static List<Occurrence> Find(List<CodeInstruction> instructions, params TranspilerPattern[] patterns)
     {
-        var occurences = new List<Occurence>();
+        var occurrences = new List<Occurrence>();
 
         var startIdx = 0;
 
@@ -47,13 +48,13 @@ public class TranspilerPattern
             foreach (var pattern in patterns)
             {
                 if (pattern.Elements.Count > instructions.Count - startIdx) continue;
-                if (!pattern.IsGreedy && occurences.Count(o => o.Pattern == pattern) >= pattern.MinOccurences) continue;
-                if (pattern.OnlyAfter != null && !pattern.OnlyAfter.All(e => e.InRange(occurences.Count(o => o.Pattern == e.Pattern)))) continue;
+                if (!pattern.IsGreedy && occurrences.Count(o => o.Pattern == pattern) >= pattern.MinOccurrences) continue;
+                if (pattern.OnlyAfter != null && !pattern.OnlyAfter.All(e => e.Match(occurrences, startIdx))) continue;
                 if (!Enumerable.Range(0, pattern.Elements.Count).All(i => pattern.Elements[i].Matcher(instructions[startIdx + i]))) continue;
-                var occurence = new Occurence(pattern, startIdx);
-                Logger.Log($"Found transpiler pattern {occurence}");
+                var occurrence = new Occurrence(pattern, startIdx);
+                Logger.Log($"Found transpiler pattern {occurrence}");
                 startIdx += pattern.Elements.Count - 1;
-                occurences.Add(occurence);
+                occurrences.Add(occurrence);
                 break;
             }
 
@@ -62,61 +63,77 @@ public class TranspilerPattern
 
         foreach (var pattern in patterns)
         {
-            var min = pattern.MinOccurences;
-            var max = pattern.MaxOccurences;
-            var count = occurences.Count(o => o.Pattern == pattern);
+            var min = pattern.MinOccurrences;
+            var max = pattern.MaxOccurrences;
+            var count = occurrences.Count(o => o.Pattern == pattern);
             if (count < min)
                 throw new Exception($"Transpiler pattern '{pattern.Name}' was expected to match at least {min} times, but matched {count} times");
             if (count > max)
                 throw new Exception($"Transpiler pattern '{pattern.Name}' was expected to match at most {max} times, but matched {count} times");
         }
 
-        return occurences;
+        return occurrences;
     }
 
     public static List<CodeInstruction> Apply(IEnumerable<CodeInstruction> instructions, params TranspilerPattern[] patterns)
         => Apply(instructions.ToList(), patterns);
 
+    public static List<CodeInstruction> Apply(IEnumerable<CodeInstruction> instructions, ILGenerator generator, params TranspilerPattern[] patterns)
+        => Apply(instructions.ToList(), generator, patterns);
+
     public static List<CodeInstruction> Apply(List<CodeInstruction> instructions, params TranspilerPattern[] patterns)
         => Apply(instructions, Find(instructions, patterns));
 
-    public static List<CodeInstruction> Apply(IEnumerable<CodeInstruction> instructions, List<Occurence> occurences)
-        => Apply(instructions.ToList(), occurences);
+    public static List<CodeInstruction> Apply(List<CodeInstruction> instructions, ILGenerator generator, params TranspilerPattern[] patterns)
+        => Apply(instructions, generator, Find(instructions, patterns));
 
-    public static List<CodeInstruction> Apply(List<CodeInstruction> instructions, List<Occurence> occurences)
+    public static List<CodeInstruction> Apply(IEnumerable<CodeInstruction> instructions, List<Occurrence> occurrences)
+        => Apply(instructions.ToList(), occurrences);
+
+    public static List<CodeInstruction> Apply(IEnumerable<CodeInstruction> instructions, ILGenerator generator, List<Occurrence> occurrences)
+        => Apply(instructions.ToList(), generator, occurrences);
+
+    public static List<CodeInstruction> Apply(List<CodeInstruction> instructions, List<Occurrence> occurrences)
+        => Apply(instructions, null, occurrences);
+
+    public static List<CodeInstruction> Apply(List<CodeInstruction> instructions, ILGenerator generator, List<Occurrence> occurrences)
     {
-        if (occurences.Count == 0) return instructions.ToList();
-        
+        if (occurrences.Count == 0) return instructions.ToList();
+
         var occIdx = 0;
 
         var result = new List<CodeInstruction>();
+        var labels = new Dictionary<string, Label>();
+        var passed = new Dictionary<TranspilerPattern, int>();
 
         for (int idxInBase = 0; idxInBase < instructions.Count; idxInBase++)
         {
-            var occurence = occurences[occIdx];
+            var occurrence = occurrences[occIdx];
             var baseInstruction = instructions[idxInBase];
-            var idxInPattern = idxInBase - occurence.StartIndex;
+            var idxInPattern = idxInBase - occurrence.StartIndex;
+
+            passed.TryGetValue(occurrence.Pattern, out var passedCount);
 
             if (idxInPattern < 0)
             {
-                if (occurence.Pattern.ShouldTrimBefore)
+                if (occurrence.Pattern.ShouldTrimBefore)
                 {
-                    occurence.Pattern.CheckCanRemove(baseInstruction);
+                    occurrence.Pattern.CheckCanRemove(baseInstruction);
                 }
-                else if (occIdx > 0 && occurences[occIdx - 1].Pattern.ShouldTrimAfter)
+                else if (occIdx > 0 && occurrences[occIdx - 1].Pattern.ShouldTrimAfter)
                 {
-                    occurences[occIdx - 1].Pattern.CheckCanRemove(baseInstruction);
+                    occurrences[occIdx - 1].Pattern.CheckCanRemove(baseInstruction);
                 }
                 else
                 {
                     result.Add(baseInstruction);
                 }
             }
-            else if (idxInPattern >= occurence.Pattern.Elements.Count)
+            else if (idxInPattern >= occurrence.Pattern.Elements.Count)
             {
-                if (occurence.Pattern.ShouldTrimAfter)
+                if (occurrence.Pattern.ShouldTrimAfter)
                 {
-                    occurence.Pattern.CheckCanRemove(baseInstruction);
+                    occurrence.Pattern.CheckCanRemove(baseInstruction);
                 }
                 else
                 {
@@ -125,43 +142,65 @@ public class TranspilerPattern
             }
             else
             {
-                var element = occurence.Pattern.Elements[idxInPattern];
+                var element = occurrence.Pattern.Elements[idxInPattern];
 
-                if (idxInPattern == 0 && occurence.Pattern.InsertBefore != null)
+                if (idxInPattern == 0)
                 {
-                    foreach (var instruction in occurence.Pattern.InsertBefore)
+                    foreach (var insertion in occurrence.Pattern.InsertBefore)
                     {
-                        result.Add(instruction.Clone());
+                        var newInstruction = insertion.Instruction.Clone();
+                        result.Add(newInstruction);
+
+                        if (newInstruction.operand is LabelPlaceholder placeholder)
+                            newInstruction.operand = GetOrCreateLabel(placeholder.label, passedCount + 1);
+
+                        foreach (var labelId in insertion.Labels)
+                            newInstruction.labels.Add(GetOrCreateLabel(labelId, passedCount + 1));
                     }
                 }
 
-                if (element.Action != null)
+                var resultInstruction = element.Action != null ? element.Action(baseInstruction) : baseInstruction;
+                if (resultInstruction != null)
                 {
-                    var newInstruction = element.Action(baseInstruction);
-                    if (newInstruction != null) result.Add(newInstruction);
-                }
-                else
-                {
-                    result.Add(baseInstruction);
+                    result.Add(resultInstruction);
+
+                    if (resultInstruction.operand is LabelPlaceholder placeholder)
+                        resultInstruction.operand = GetOrCreateLabel(placeholder.label, passedCount + 1);
+
+                    foreach (var labelId in element.Labels)
+                        resultInstruction.labels.Add(GetOrCreateLabel(labelId, passedCount + 1));
                 }
 
-                if (element.InsertAfter != null)
+                foreach (var insertion in element.InsertAfter)
                 {
-                    foreach (var instruction in element.InsertAfter)
-                    {
-                        result.Add(instruction.Clone());
-                    }
+                    var newInstruction = insertion.Instruction.Clone();
+                    result.Add(newInstruction);
+
+                    if (newInstruction.operand is LabelPlaceholder placeholder)
+                        newInstruction.operand = GetOrCreateLabel(placeholder.label, passedCount + 1);
+
+                    foreach (var labelId in insertion.Labels)
+                        newInstruction.labels.Add(GetOrCreateLabel(labelId, passedCount + 1));
                 }
 
-                if (idxInPattern >= occurence.Pattern.Elements.Count - 1)
+                if (idxInPattern >= occurrence.Pattern.Elements.Count - 1)
                 {
-                    if (occIdx < occurences.Count - 1) occIdx++;
-                    Logger.Log($"Applied transpiler pattern {occurence}");
+                    passed[occurrence.Pattern] = passedCount + 1;
+                    if (occIdx < occurrences.Count - 1) occIdx++;
+                    Logger.Log($"Applied transpiler pattern {occurrence}");
                 }
             }
         }
 
         return result;
+
+        Label GetOrCreateLabel(string id, int idx)
+        {
+            if (generator == null) throw new Exception("no IL generator given");
+            var labelId = id.Contains("#") ? id : id + "#" + idx;
+            if (!labels.TryGetValue(labelId, out var label)) label = labels[labelId] = generator.DefineLabel();
+            return label;
+        }
     }
 
     public Element Match(Predicate<CodeInstruction> matcher)
@@ -193,25 +232,31 @@ public class TranspilerPattern
 
     public Element MatchStloc(LocalBuilder local = null) => Match(ci => ci.IsStloc(local));
 
+    public Element MatchCall(MethodInfo methodInfo) => Match(ci => ci.Calls(methodInfo));
+
+    public Element MatchLoad(FieldInfo fieldInfo) => Match(ci => ci.LoadsField(fieldInfo));
+
+    public Element MatchStore(FieldInfo fieldInfo) => Match(ci => ci.StoresField(fieldInfo));
+
     public Element MatchCall(Type type, string methodName, Type[] parameters = null, Type[] generics = null)
     {
         var methodInfo = AccessTools.Method(type, methodName, parameters, generics);
         if (methodInfo == null) throw new Exception($"Method {type.FullName}.{methodName} not found");
-        return Match(ci => ci.Calls(methodInfo));
+        return MatchCall(methodInfo);
     }
 
     public Element MatchLoad(Type type, string fieldName)
     {
         var fieldInfo = AccessTools.Field(type, fieldName);
         if (fieldInfo == null) throw new Exception($"Field {type.FullName}.{fieldName} not found");
-        return Match(ci => ci.LoadsField(fieldInfo));
+        return MatchLoad(fieldInfo);
     }
 
     public Element MatchStore(Type type, string fieldName)
     {
         var fieldInfo = AccessTools.Field(type, fieldName);
         if (fieldInfo == null) throw new Exception($"Field {type.FullName}.{fieldName} not found");
-        return Match(ci => ci.StoresField(fieldInfo));
+        return MatchStore(fieldInfo);
     }
 
     public Element MatchNewobj(Type type, Type[] parameters = null)
@@ -221,20 +266,25 @@ public class TranspilerPattern
         return Match(ci => ci.opcode == OpCodes.Newobj && Equals(ci.operand, constructorInfo));
     }
 
+    public TranspilerPattern InsertCall(Type type, string name, Type[] parameters = null, Type[] generics = null)
+        => Insert(CodeInstruction.Call(type, name, parameters, generics));
+
+    public TranspilerPattern InsertLoadField(Type type, string name, bool useAddress = false)
+        => Insert(CodeInstruction.LoadField(type, name, useAddress));
+
     public TranspilerPattern Insert(OpCode opcode, object operand = null) => Insert(new CodeInstruction(opcode, operand));
 
     public TranspilerPattern Insert(CodeInstruction instruction)
     {
+        var insertion = new Insertion { Instruction = instruction, Labels = [] };
+
         if (Elements.Count > 0)
         {
-            var element = Elements.Last();
-            element.InsertAfter ??= new();
-            element.InsertAfter.Add(instruction);
+            Elements.Last().InsertAfter.Add(insertion);
         }
         else
         {
-            InsertBefore ??= new();
-            InsertBefore.Add(instruction);
+            InsertBefore.Add(insertion);
         }
 
         return this;
@@ -252,19 +302,19 @@ public class TranspilerPattern
         return this;
     }
 
-    public TranspilerPattern Greedy(int minOccurences = 1, int maxOccurences = int.MaxValue)
+    public TranspilerPattern Greedy(int minOccurrences = 1, int maxOccurrences = int.MaxValue)
     {
         IsGreedy = true;
-        MinOccurences = minOccurences;
-        MaxOccurences = maxOccurences;
+        MinOccurrences = minOccurrences;
+        MaxOccurrences = maxOccurrences;
         return this;
     }
 
-    public TranspilerPattern Lazy(int occurences = 1)
+    public TranspilerPattern Lazy(int occurrences = 1)
     {
         IsGreedy = false;
-        MinOccurences = occurences;
-        MaxOccurences = occurences;
+        MinOccurrences = occurrences;
+        MaxOccurrences = occurrences;
         return this;
     }
 
@@ -272,14 +322,53 @@ public class TranspilerPattern
         => OnlyMatchAfter(other, 0, 0);
 
     public TranspilerPattern OnlyMatchAfter(TranspilerPattern other, int minCount = 1, int maxCount = int.MaxValue)
+        => OnlyMatchAfter(other, minCount, maxCount, 0, int.MaxValue);
+
+    public TranspilerPattern OnlyMatchDirectlyAfter(TranspilerPattern other)
+        => OnlyMatchAfter(other, 1, int.MaxValue, 0, 0);
+
+    public TranspilerPattern OnlyMatchAfter(
+        TranspilerPattern other,
+        int minCount, int maxCount,
+        int minDistance, int maxDistance)
     {
-        OnlyAfter ??= new();
         OnlyAfter.RemoveAll(e => e.Pattern == other);
-        OnlyAfter.Add(new RelativeMatchCondition(other, minCount, maxCount));
+        OnlyAfter.Add(new RelativeMatchCondition(other, minCount, maxCount, minDistance, maxDistance));
         return this;
     }
 
-    protected void CheckCanRemove(CodeInstruction ci)
+    public TranspilerPattern PutLabel(string label)
+    {
+        if (Elements.Count > 0)
+        {
+            var element = Elements.Last();
+            if (element.InsertAfter.Count > 0)
+            {
+                element.InsertAfter.Last().Labels.Add(label);
+            }
+            else
+            {
+                element.Labels.Add(label);
+            }
+        }
+        else if (InsertBefore.Count > 0)
+        {
+            InsertBefore.Last().Labels.Add(label);
+        }
+        else
+        {
+            throw new Exception("no target for label");
+        }
+
+        return this;
+    }
+
+    public static object Label(string label)
+    {
+        return new LabelPlaceholder { label = label };
+    }
+
+    internal void CheckCanRemove(CodeInstruction ci)
     {
         if (ci.labels.Count > 0 || ci.blocks.Count > 0)
         {
@@ -287,17 +376,18 @@ public class TranspilerPattern
         }
     }
 
-    protected static string CodePos(int idx) => $"{idx:X4}";
+    internal static string CodePos(int idx) => $"{idx:X4}";
 
     public class Element
     {
         public readonly TranspilerPattern Pattern;
 
-        protected internal Predicate<CodeInstruction> Matcher;
-        protected internal Func<CodeInstruction, CodeInstruction> Action;
-        protected internal List<CodeInstruction> InsertAfter;
+        internal Predicate<CodeInstruction> Matcher;
+        internal Func<CodeInstruction, CodeInstruction> Action;
+        internal List<Insertion> InsertAfter = [];
+        internal List<string> Labels = [];
 
-        protected internal Element(TranspilerPattern pattern, Predicate<CodeInstruction> matcher = null)
+        internal Element(TranspilerPattern pattern, Predicate<CodeInstruction> matcher = null)
         {
             Pattern = pattern;
             Matcher = matcher;
@@ -393,7 +483,7 @@ public class TranspilerPattern
         });
     }
 
-    public readonly struct Occurence
+    public readonly struct Occurrence
     {
         public readonly TranspilerPattern Pattern;
 
@@ -412,7 +502,7 @@ public class TranspilerPattern
         /// </summary>
         public int EndIndex => StartIndex + Length;
 
-        public Occurence(TranspilerPattern pattern, int startIndex)
+        public Occurrence(TranspilerPattern pattern, int startIndex)
         {
             Pattern = pattern;
             StartIndex = startIndex;
@@ -424,20 +514,46 @@ public class TranspilerPattern
         }
     }
 
-    protected internal readonly struct RelativeMatchCondition
+    internal readonly struct RelativeMatchCondition
     {
         public readonly TranspilerPattern Pattern;
         public readonly int MinCount;
         public readonly int MaxCount;
+        public readonly int MinDistance;
+        public readonly int MaxDistance;
 
-        public bool InRange(int count) => count >= MinCount && count <= MaxCount;
+        public bool Match(List<Occurrence> occurrences, int startIdx)
+        {
+            var pattern = Pattern;
+            var count = occurrences.Count(o => o.Pattern == pattern);
+            if (count < MinCount || count > MaxCount) return false;
+            if (MinDistance <= 0 && MaxDistance == int.MaxValue) return true;
+            var distance = startIdx - occurrences.Where(o => o.Pattern == pattern).Max(o => o.EndIndex);
+            return distance >= MinDistance && distance <= MaxDistance;
+        }
 
-        public RelativeMatchCondition(TranspilerPattern pattern, int minCount, int maxCount)
+        public RelativeMatchCondition(
+            TranspilerPattern pattern,
+            int minCount, int maxCount,
+            int minDistance, int maxDistance)
         {
             Pattern = pattern;
             MinCount = minCount;
             MaxCount = maxCount;
+            MinDistance = minDistance;
+            MaxDistance = maxDistance;
         }
+    }
+
+    internal struct Insertion
+    {
+        public CodeInstruction Instruction;
+        public List<string> Labels;
+    }
+
+    internal class LabelPlaceholder
+    {
+        public string label;
     }
 
     internal static readonly Dictionary<OpCode, OpCode> LdlocToStloc = new()
