@@ -26,37 +26,37 @@ public class ExtensionPoint<TC, T>
 
     public void AddModifier(int priority, Func<TC, T, T> modifier)
     {
-        Extensions.Add(new Extension(modifier, priority));
+        AddExtension(new Extension(modifier, priority));
     }
 
     public void AddModifier(int priority, Func<T, T> modifier)
     {
-        Extensions.Add(new Extension((_, val) => modifier(val), priority));
+        AddExtension(new Extension((_, val) => modifier(val), priority));
     }
 
     public void AddSupplier(int priority, Func<TC, T> supplier)
     {
-        Extensions.Add(new Extension((ctx, _) => supplier(ctx), priority));
+        AddExtension(new Extension((ctx, _) => supplier(ctx), priority));
     }
 
     public void AddSupplier(int priority, Func<T> supplier)
     {
-        Extensions.Add(new Extension((_, _) => supplier(), priority));
+        AddExtension(new Extension((_, _) => supplier(), priority));
     }
 
     public void AddObserver(int priority, Action<TC, T> observer)
     {
-        Extensions.Add(new Extension((ctx, val) => { observer(ctx, val); return val; }, priority));
+        AddExtension(new Extension((ctx, val) => { observer(ctx, val); return val; }, priority));
     }
 
     public void AddObserver(int priority, Action<TC> observer)
     {
-        Extensions.Add(new Extension((ctx, val) => { observer(ctx); return val; }, priority));
+        AddExtension(new Extension((ctx, val) => { observer(ctx); return val; }, priority));
     }
 
     public void AddObserver(int priority, Action<T> observer)
     {
-        Extensions.Add(new Extension((_, val) => { observer(val); return val; }, priority));
+        AddExtension(new Extension((_, val) => { observer(val); return val; }, priority));
     }
 
     private void AddExtension(Extension extension)

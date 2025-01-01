@@ -37,5 +37,7 @@
         <EmitToDirectory Include="..\..\..\MapPreview\$(RimWorldVersion)\Lunar\Components\"/>
         <EmitToDirectory Include="..\..\..\GeologicalLandforms\$(RimWorldVersion)\Lunar\Components\"/>
         <EmitToDirectory Include="..\..\..\HugsLogPublisher\$(RimWorldVersion)\Lunar\Components\"/>
+        <EmitToDirectory Include="..\..\..\OpenWorldProject\$(RimWorldVersion)\Lunar\Components\"/>
+        <EmitToDirectory Include="..\..\..\WorldTechLevel\$(RimWorldVersion)\Lunar\Components\"/>
     </ItemGroup>
 </Project>

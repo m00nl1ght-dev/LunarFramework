@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using LunarFramework.Bootstrap;
 using LunarFramework.Logging;
 using Verse;
 
@@ -20,6 +20,11 @@ public abstract class ModCompat
 
     private int _reflectiveAccessOperationIdx;
 
+    public static bool IsModAssemblyPresent(string name)
+    {
+        return Entrypoint.AllModAssemblies.ContainsKey(name);
+    }
+
     public static void ApplyAll(LunarAPI lunarAPI, PatchGroup patchGroup)
     {
         ApplyAll(lunarAPI.Component.LoadedAssembly, lunarAPI.LogContext, patchGroup);
@@ -27,13 +32,6 @@ public abstract class ModCompat
 
     public static void ApplyAll(Assembly assembly, LogContext logContext, PatchGroup patchGroup)
     {
-        var assemblies = new Dictionary<string, Assembly>();
-
-        foreach (var loadedAssembly in LoadedModManager.RunningModsListForReading.SelectMany(m => m.assemblies.loadedAssemblies))
-        {
-            assemblies.AddDistinct(loadedAssembly.GetName().Name, loadedAssembly);
-        }
-
         foreach (var type in AccessTools.GetTypesFromAssembly(assembly))
         {
             if (type.IsSubclassOf(typeof(ModCompat)) && !type.IsAbstract)
@@ -41,7 +39,7 @@ public abstract class ModCompat
                 try
                 {
                     var instance = (ModCompat) Activator.CreateInstance(type);
-                    if (assemblies.TryGetValue(instance.TargetAssemblyName, out var target))
+                    if (Entrypoint.AllModAssemblies.TryGetValue(instance.TargetAssemblyName, out var target))
                     {
                         try
                         {

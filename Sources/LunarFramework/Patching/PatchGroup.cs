@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using LunarFramework.Bootstrap;
 using LunarFramework.Internal;
 using LunarFramework.Logging;
 using LunarFramework.Utility;
@@ -14,16 +15,16 @@ public class PatchGroup : IPatchGroup
     public string Name { get; }
 
     public bool Active => _subscribers.Count > 0;
-    
+
     public bool Applied { get; private set; }
 
     public IEnumerable<Type> OwnPatchClasses => _ownPatchClasses;
     public IEnumerable<IPatchGroup> OwnSubGroups => _ownSubGroups;
 
-    private readonly HashSet<Type> _ownPatchClasses = new();
-    private readonly HashSet<IPatchGroup> _ownSubGroups = new();
+    private readonly HashSet<Type> _ownPatchClasses = [];
+    private readonly HashSet<IPatchGroup> _ownSubGroups = [];
 
-    private readonly HashSet<PatchGroupSubscriber> _subscribers = new();
+    private readonly HashSet<PatchGroupSubscriber> _subscribers = [];
 
     private readonly float _unpatchDelay;
 
@@ -60,10 +61,14 @@ public class PatchGroup : IPatchGroup
         var assemblyName = assembly.GetName().Name;
         foreach (var type in AccessTools.GetTypesFromAssembly(assembly))
         {
-            var attribute = type.GetCustomAttribute<PatchGroupAttribute>();
-            if (attribute != null && assemblyName + "." + attribute.Name == Name)
+            var groupAttribute = type.GetCustomAttribute<PatchGroupAttribute>();
+            if (groupAttribute != null && assemblyName + "." + groupAttribute.Name == Name)
             {
-                AddPatch(type);
+                var excludeAttribute = type.GetCustomAttribute<PatchExcludedIfPresentAttribute>();
+                if (excludeAttribute == null || !Entrypoint.AllModAssemblies.ContainsKey(excludeAttribute.Assembly))
+                {
+                    AddPatch(type);
+                }
             }
         }
     }
@@ -139,6 +144,26 @@ public class PatchGroup : IPatchGroup
         }
     }
 
+    public void ReApply(bool selfOnly = false)
+    {
+        if (Active && Applied)
+        {
+            _harmony.UnpatchAll(_harmony.Id);
+            foreach (var patchClass in _ownPatchClasses)
+            {
+                TryPatch(patchClass);
+            }
+        }
+
+        if (!selfOnly)
+        {
+            foreach (var group in _ownSubGroups)
+            {
+                group.ReApply();
+            }
+        }
+    }
+
     private void TryPatch()
     {
         if (Active && !Applied)
@@ -208,7 +233,7 @@ public class PatchGroup : IPatchGroup
         {
             return patch.owner == id && patch.PatchMethod?.GetCustomAttribute<PatchExcludedFromConflictCheckAttribute>() == null;
         }
-        
+
         foreach (var method in Harmony.GetAllPatchedMethods())
         {
             try
@@ -240,3 +265,14 @@ public class PatchGroup : IPatchGroup
 
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 public class PatchExcludedFromConflictCheckAttribute : Attribute { }
+
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+public class PatchExcludedIfPresentAttribute : Attribute
+{
+    public readonly string Assembly;
+
+    public PatchExcludedIfPresentAttribute(string assembly)
+    {
+        Assembly = assembly;
+    }
+}

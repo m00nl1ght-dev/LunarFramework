@@ -39,4 +39,6 @@ public static class CommonExtensions
     }
 
     public static Vector3 ToVec3(this IntVec3 vec) => new(vec.x, vec.y, vec.z);
+
+    public static Rect MoveBy(this Rect rect, float x, float y) => new(rect.x + x, rect.y + y, rect.width, rect.height);
 }

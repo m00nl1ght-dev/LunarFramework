@@ -16,6 +16,7 @@ public interface IPatchGroup
     public void Subscribe(PatchGroupSubscriber subscriber, bool selfOnly = false);
     public void Unsubscribe(PatchGroupSubscriber subscriber, bool selfOnly = false);
     public void UnsubscribeAll(bool selfOnly = false);
+    public void ReApply(bool selfOnly = false);
 }
 
 public static class PatchGroupExtensions

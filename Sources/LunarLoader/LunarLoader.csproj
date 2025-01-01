@@ -24,5 +24,7 @@
         <EmitToDirectory Include="..\..\..\MapPreview\$(RimWorldVersion)\Assemblies\"/>
         <EmitToDirectory Include="..\..\..\GeologicalLandforms\$(RimWorldVersion)\Assemblies\"/>
         <EmitToDirectory Include="..\..\..\HugsLogPublisher\$(RimWorldVersion)\Assemblies\"/>
+        <EmitToDirectory Include="..\..\..\OpenWorldProject\$(RimWorldVersion)\Assemblies\"/>
+        <EmitToDirectory Include="..\..\..\WorldTechLevel\$(RimWorldVersion)\Assemblies\"/>
     </ItemGroup>
 </Project>

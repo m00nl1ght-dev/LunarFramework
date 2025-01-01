@@ -11,6 +11,8 @@ public class LifecycleHooks
 
     internal LifecycleHooks() { }
 
+    public static float FrameStartTime => LunarRoot.FrameStartTime;
+
     public void DoOnce(Action action, float delay = 0f)
     {
         if (delay > 0f)

@@ -21,6 +21,8 @@ internal static class Entrypoint
     internal static readonly Dictionary<string, LunarMod> LunarMods = new();
     internal static readonly Dictionary<string, LunarComponent> LunarComponents = new();
 
+    internal static readonly Dictionary<string, Assembly> AllModAssemblies = [];
+
     internal static event Action OnComponentAssembliesLoaded;
 
     internal static void RunBootstrap()
@@ -138,15 +140,6 @@ internal static class Entrypoint
                     OnConflict(mod, mcp, null);
                     return;
                 }
-            }
-        }
-
-        foreach (var file in ModContentPack.GetAllFilesForModPreserveOrder(mod.ModContentPack, "Assemblies/"))
-        {
-            if (!file.Item2.Name.Equals(LunarMod.LoaderAssemblyFileName) && !file.Item2.Name.EndsWith(".pdb"))
-            {
-                OnError(mod, "invalid file: " + file.Item2.Name);
-                return;
             }
         }
 
@@ -359,6 +352,13 @@ internal static class Entrypoint
         {
             LunarRoot.CreateInstance();
             LunarRoot.BootstrapPatchGroup.UnsubscribeAll();
+
+            AllModAssemblies.Clear();
+
+            foreach (var loadedAssembly in LoadedModManager.RunningModsListForReading.SelectMany(m => m.assemblies.loadedAssemblies))
+            {
+                AllModAssemblies.AddDistinct(loadedAssembly.GetName().Name, loadedAssembly);
+            }
 
             foreach (var component in LunarComponents.Values.OrderBy(m => m.SortOrderIdx))
             {

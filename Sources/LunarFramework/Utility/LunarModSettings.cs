@@ -47,6 +47,8 @@ public abstract class LunarModSettings : ModSettings
 
     protected static Entry<List<T>> MakeEntry<T>(List<T> defaultValue) => new ListEntry<T>(defaultValue);
 
+    protected static Entry<Dictionary<K, V>> MakeEntry<K, V>(Dictionary<K, V> defaultValue) => new DictionaryEntry<K, V>(defaultValue);
+
     protected Tab MakeTab(string name, Action<LayoutRect> content, Func<bool> condition = null)
     {
         var tab = new Tab(name, content, condition);
@@ -139,6 +141,17 @@ public abstract class LunarModSettings : ModSettings
     public class ListEntry<T> : Entry<List<T>>
     {
         internal ListEntry(List<T> defaultValue) : base(defaultValue) { }
+
+        public override void ExposeData()
+        {
+            Scribe_Collections.Look(ref Value, Name, LookMode.Value);
+            Value ??= DefaultValue;
+        }
+    }
+
+    public class DictionaryEntry<K, V> : Entry<Dictionary<K, V>>
+    {
+        internal DictionaryEntry(Dictionary<K, V> defaultValue) : base(defaultValue) { }
 
         public override void ExposeData()
         {

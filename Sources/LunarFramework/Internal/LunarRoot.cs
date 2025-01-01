@@ -24,6 +24,9 @@ internal class LunarRoot : MonoBehaviour
     internal static event Action DoOnGUI;
     internal static event Action DoOnQuit;
 
+    internal static float FrameStartTime;
+    internal static int LastFrame = -1;
+
     internal static void Initialize()
     {
         try
@@ -64,6 +67,15 @@ internal class LunarRoot : MonoBehaviour
     internal static void OnMainMenuReady()
     {
         Interlocked.Exchange(ref DoOnceOnMainMenu, null)?.Invoke();
+    }
+
+    private void FixedUpdate()
+    {
+        if (Time.frameCount > LastFrame)
+        {
+            LastFrame = Time.frameCount;
+            FrameStartTime = Time.realtimeSinceStartup;
+        }
     }
 
     private void Update()
