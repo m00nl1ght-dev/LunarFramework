@@ -27,6 +27,8 @@ internal static class Entrypoint
 
     internal static void RunBootstrap()
     {
+        CacheAssemblyList();
+
         LunarRoot.Initialize();
 
         FindLunarMods();
@@ -48,6 +50,16 @@ internal static class Entrypoint
         foreach (var mod in LunarMods.Values.Where(m => m.LoadingState == LoadingState.Pending))
         {
             mod.LoadingState = LoadingState.Loaded;
+        }
+    }
+
+    private static void CacheAssemblyList()
+    {
+        AllModAssemblies.Clear();
+
+        foreach (var loadedAssembly in LoadedModManager.RunningModsListForReading.SelectMany(m => m.assemblies.loadedAssemblies))
+        {
+            AllModAssemblies.AddDistinct(loadedAssembly.GetName().Name, loadedAssembly);
         }
     }
 
@@ -350,15 +362,10 @@ internal static class Entrypoint
 
         try
         {
+            CacheAssemblyList();
+
             LunarRoot.CreateInstance();
             LunarRoot.BootstrapPatchGroup.UnsubscribeAll();
-
-            AllModAssemblies.Clear();
-
-            foreach (var loadedAssembly in LoadedModManager.RunningModsListForReading.SelectMany(m => m.assemblies.loadedAssemblies))
-            {
-                AllModAssemblies.AddDistinct(loadedAssembly.GetName().Name, loadedAssembly);
-            }
 
             foreach (var component in LunarComponents.Values.OrderBy(m => m.SortOrderIdx))
             {
