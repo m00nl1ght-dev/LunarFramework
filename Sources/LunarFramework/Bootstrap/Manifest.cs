@@ -1,57 +1,63 @@
 using System;
 using System.Collections.Generic;
+
+#if RW_1_6_OR_GREATER
+using Verse;
+#else
 using System.IO;
 using System.Xml.Serialization;
+#endif
 
 namespace LunarFramework.Bootstrap;
 
 [Serializable]
 public class Manifest
 {
-    public string Name { get; set; }
-    public string PackageId { get; set; }
-    public string Authors { get; set; }
+    public string Name;
+    public string PackageId;
+    public string Authors;
 
-    public string MinGameVersion { get; set; }
+    public string MinGameVersion;
 
-    public CompatibilityList Compatibility { get; set; }
+    public CompatibilityList Compatibility;
 
-    public List<Component> Components { get; set; } = new();
+    public List<Component> Components = new();
 
     internal static Manifest ReadFromFile(string file)
     {
+        #if RW_1_6_OR_GREATER
+
+        return DirectXmlLoader.ItemFromXmlFile<Manifest>(file);
+
+        #else
+
         var serializer = new XmlSerializer(typeof(Manifest));
         using var reader = new StreamReader(file);
         return (Manifest) serializer.Deserialize(reader);
-    }
 
-    internal static void WriteToFile(Manifest manifest, string file)
-    {
-        var serializer = new XmlSerializer(typeof(Manifest));
-        using var writer = new StreamWriter(file);
-        serializer.Serialize(writer, manifest);
+        #endif
     }
 
     [Serializable]
-    public struct CompatibilityList
+    public class CompatibilityList
     {
         public List<Entry> Lunar;
         public List<Entry> Refuse;
     }
 
     [Serializable]
-    public struct Entry
+    public class Entry
     {
         public string PackageId;
         public string MinVersion;
     }
 
     [Serializable]
-    public struct Component
+    public class Component
     {
-        public string AssemblyName { get; set; }
-        public bool AllowNonLunarSource { get; set; }
-        public List<string> Aliases { get; set; }
-        public List<string> DependsOn { get; set; }
+        public string AssemblyName;
+        public bool AllowNonLunarSource;
+        public List<string> Aliases;
+        public List<string> DependsOn;
     }
 }
