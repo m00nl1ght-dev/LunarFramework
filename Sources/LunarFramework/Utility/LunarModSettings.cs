@@ -140,23 +140,49 @@ public abstract class LunarModSettings : ModSettings
 
     public class ListEntry<T> : Entry<List<T>>
     {
-        internal ListEntry(List<T> defaultValue) : base(defaultValue) { }
+        internal ListEntry(List<T> defaultValue) : base(defaultValue)
+        {
+            Value = NewDefaultInstance();
+        }
 
         public override void ExposeData()
         {
             Scribe_Collections.Look(ref Value, Name, LookMode.Value);
-            Value ??= DefaultValue;
+            Value ??= NewDefaultInstance();
+        }
+
+        public override void Reset()
+        {
+            Value = NewDefaultInstance();
+        }
+
+        private List<T> NewDefaultInstance()
+        {
+            return DefaultValue == null ? null : new List<T>(DefaultValue);
         }
     }
 
     public class DictionaryEntry<K, V> : Entry<Dictionary<K, V>>
     {
-        internal DictionaryEntry(Dictionary<K, V> defaultValue) : base(defaultValue) { }
+        internal DictionaryEntry(Dictionary<K, V> defaultValue) : base(defaultValue)
+        {
+            Value = NewDefaultInstance();
+        }
 
         public override void ExposeData()
         {
             Scribe_Collections.Look(ref Value, Name, LookMode.Value);
-            Value ??= DefaultValue;
+            Value ??= NewDefaultInstance();
+        }
+
+        public override void Reset()
+        {
+            Value = NewDefaultInstance();
+        }
+
+        private Dictionary<K, V> NewDefaultInstance()
+        {
+            return DefaultValue == null ? null : new Dictionary<K, V>(DefaultValue);
         }
     }
 
