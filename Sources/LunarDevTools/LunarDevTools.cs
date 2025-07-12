@@ -67,12 +67,21 @@ public class LunarDevTools : Mod
                 continue;
             }
 
-            CreateCheckFile(modVersion, ManifestFileIn(lunarMod.FrameworkDir));
-
-            var componentDir = new DirectoryInfo(ComponentsDirIn(lunarMod.FrameworkDir));
-            foreach (var file in componentDir.GetFiles("*.dll"))
+            foreach (var dir1 in new DirectoryInfo(lunarMod.ModContentPack.RootDir).GetDirectories())
             {
-                CreateCheckFile(modVersion, file.FullName);
+                foreach (var dir2 in dir1.GetDirectories())
+                {
+                    if (dir2.Name == "Lunar")
+                    {
+                        CreateCheckFile(modVersion, ManifestFileIn(dir2.ToString()));
+
+                        var componentDir = new DirectoryInfo(ComponentsDirIn(dir2.ToString()));
+                        foreach (var file in componentDir.GetFiles("*.dll"))
+                        {
+                            CreateCheckFile(modVersion, file.FullName);
+                        }
+                    }
+                }
             }
         }
     }
