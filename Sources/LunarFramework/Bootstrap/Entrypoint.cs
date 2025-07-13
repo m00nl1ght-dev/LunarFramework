@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 using HarmonyLib;
 using LunarFramework.Internal;
+using LunarFramework.Patching;
 using LunarFramework.Utility;
 using RimWorld;
 using UnityEngine;
@@ -377,6 +378,19 @@ internal static class Entrypoint
             {
                 mod.LoadingState = LoadingState.Initialized;
             }
+
+            #if RW_1_6_OR_GREATER
+
+            try
+            {
+                HarmonyInliningFixer.Apply();
+            }
+            catch (Exception e)
+            {
+                LunarRoot.Logger.Fatal("Failed to refresh Harmony patches", e);
+            }
+
+            #endif
         }
         catch (Exception e)
         {
