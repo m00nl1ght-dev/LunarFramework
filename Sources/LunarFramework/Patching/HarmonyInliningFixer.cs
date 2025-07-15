@@ -29,14 +29,21 @@ internal static class HarmonyInliningFixer
 
         foreach (var method in patchedMethods)
         {
-            var patchInfo = PatchProcessor.GetPatchInfo(method);
-
-            if (patchInfo.Prefixes.Any(HasAttribute) ||
-                patchInfo.Postfixes.Any(HasAttribute) ||
-                patchInfo.Transpilers.Any(HasAttribute) ||
-                patchInfo.Finalizers.Any(HasAttribute))
+            try
             {
-                refreshTargets.Add(method.GetDeclaredMember());
+                var patchInfo = PatchProcessor.GetPatchInfo(method);
+
+                if (patchInfo.Prefixes.Any(HasAttribute) ||
+                    patchInfo.Postfixes.Any(HasAttribute) ||
+                    patchInfo.Transpilers.Any(HasAttribute) ||
+                    patchInfo.Finalizers.Any(HasAttribute))
+                {
+                    refreshTargets.Add(method.GetDeclaredMember());
+                }
+            }
+            catch (Exception e)
+            {
+                LunarRoot.Logger.Debug($"Exception while checking Harmony patches for {method.FullDescription()}", e);
             }
         }
 
