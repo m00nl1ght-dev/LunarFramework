@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,7 +7,7 @@ namespace LunarFramework.GUI;
 public class LayoutRect
 {
     internal readonly LunarAPI LunarAPI;
-    internal readonly Node Root = new(null);
+    internal readonly Node RootNode;
 
     internal Node Current;
 
@@ -19,6 +20,7 @@ public class LayoutRect
     public LayoutRect(LunarAPI lunarAPI)
     {
         LunarAPI = lunarAPI;
+        RootNode = new Node(this, null);
     }
 
     public void BeginRoot(Rect rect, LayoutParams layoutParams = default)
@@ -28,7 +30,7 @@ public class LayoutRect
             LunarAPI.LogContext.Warn("Beginning layout before last one was ended.");
         }
 
-        Current = Root;
+        Current = RootNode;
         Current.Layout(rect, layoutParams);
     }
 
@@ -84,6 +86,60 @@ public class LayoutRect
         Current = Current.Parent;
     }
 
+    public IDisposable Root(Rect rect, LayoutParams layoutParams = default)
+    {
+        BeginRoot(rect, layoutParams);
+        return Current;
+    }
+
+    public IDisposable Row(float size = -1, LayoutParams layoutParams = default)
+    {
+        BeginAbs(size, layoutParams with { Horizontal = true, Reversed = false });
+        return Current;
+    }
+
+    public IDisposable RowRev(float size = -1, LayoutParams layoutParams = default)
+    {
+        BeginAbs(size, layoutParams with { Horizontal = true, Reversed = true });
+        return Current;
+    }
+
+    public IDisposable RowRel(float sizeRel, LayoutParams layoutParams = default)
+    {
+        BeginRel(sizeRel, layoutParams with { Horizontal = true, Reversed = false });
+        return Current;
+    }
+
+    public IDisposable RowRevRel(float sizeRel, LayoutParams layoutParams = default)
+    {
+        BeginRel(sizeRel, layoutParams with { Horizontal = true, Reversed = true });
+        return Current;
+    }
+
+    public IDisposable Col(float size = -1, LayoutParams layoutParams = default)
+    {
+        BeginAbs(size, layoutParams with { Horizontal = false, Reversed = false });
+        return Current;
+    }
+
+    public IDisposable ColRev(float size = -1, LayoutParams layoutParams = default)
+    {
+        BeginAbs(size, layoutParams with { Horizontal = false, Reversed = true });
+        return Current;
+    }
+
+    public IDisposable ColRel(float sizeRel, LayoutParams layoutParams = default)
+    {
+        BeginRel(sizeRel, layoutParams with { Horizontal = false, Reversed = false });
+        return Current;
+    }
+
+    public IDisposable ColRevRel(float sizeRel, LayoutParams layoutParams = default)
+    {
+        BeginRel(sizeRel, layoutParams with { Horizontal = false, Reversed = true });
+        return Current;
+    }
+
     public void PushChanged(bool changed = false)
     {
         _changedStack.Push(UnityEngine.GUI.changed);
@@ -117,13 +173,15 @@ public class LayoutRect
         return sizeRel < 0 ? -1 : Mathf.Min(sizeRel, 1) * Current.LayoutParams.SizeOf(Current);
     }
 
-    internal class Node
+    internal class Node : IDisposable
     {
         internal Rect Rect;
         internal LayoutParams LayoutParams;
 
+        internal readonly LayoutRect Owner;
         internal readonly Node Parent;
-        internal Node Child => _child ??= new Node(this);
+
+        internal Node Child => _child ??= new Node(Owner, this);
         private Node _child;
 
         public float OccupiedSpace { get; private set; }
@@ -131,8 +189,9 @@ public class LayoutRect
 
         public static implicit operator Rect(Node node) => node?.Rect ?? default;
 
-        internal Node(Node parent)
+        internal Node(LayoutRect owner, Node parent)
         {
+            Owner = owner;
             Parent = parent;
         }
 
@@ -162,6 +221,18 @@ public class LayoutRect
 
             OccupiedSpace += size + LayoutParams.Spacing;
             return next;
+        }
+
+        public void Dispose()
+        {
+            if (Owner.Current != this)
+            {
+                Owner.LunarAPI.LogContext.Warn("Attempted to end layout node which is not the current node.");
+            }
+            else
+            {
+                Owner.End();
+            }
         }
     }
 }
