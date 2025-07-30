@@ -59,6 +59,35 @@ public static class LunarGUI
         if (value != before) UnityEngine.GUI.changed = true;
     }
 
+    public static MultiCheckboxState CheckboxThreeStates(Rect rect, MultiCheckboxState state)
+    {
+        var tex = state switch
+        {
+            MultiCheckboxState.On => Widgets.CheckboxOnTex,
+            MultiCheckboxState.Off => Widgets.CheckboxOffTex,
+            _ => Widgets.CheckboxPartialTex
+        };
+
+        MouseoverSounds.DoRegion(rect);
+
+        if (Widgets.ButtonImage(rect, tex))
+        {
+            state = state switch
+            {
+                MultiCheckboxState.On => MultiCheckboxState.Off,
+                MultiCheckboxState.Off => MultiCheckboxState.Partial,
+                _ => MultiCheckboxState.On
+            };
+
+            var sound = state == MultiCheckboxState.On ? SoundDefOf.Checkbox_TurnedOn : SoundDefOf.Checkbox_TurnedOff;
+            sound.PlayOneShotOnCamera();
+
+            UnityEngine.GUI.changed = true;
+        }
+
+        return state;
+    }
+
     public static void TextField(LayoutRect layout, ref string value)
         => TextField(layout.Abs(layout.Horizontal ? -1f : 28f), ref value);
 
@@ -70,6 +99,52 @@ public static class LunarGUI
 
     public static void IntField(Rect rect, ref int value, ref string editBuffer, int min, int max)
         => Widgets.TextFieldNumeric(rect, ref value, ref editBuffer, min, max);
+
+    public static void DoubleField(LayoutRect layout, ref double value, ref string buffer, double min, double max)
+        => DoubleField(layout.Abs(layout.Horizontal ? -1f : 28f), ref value, ref buffer, min, max);
+
+    public static void DoubleField(Rect rect, ref double value, ref string buffer, double min, double max)
+    {
+        var str = value.ToString();
+        buffer ??= str;
+
+        var controlName = $"LunarGUIDoubleField_{rect.y:F0}_{rect.x:F0}";
+        UnityEngine.GUI.SetNextControlName(controlName);
+
+        if (buffer != str && UnityEngine.GUI.GetNameOfFocusedControl() != controlName)
+        {
+            if (double.TryParse(buffer, out var num) && num >= min && num <= max)
+            {
+                buffer = str;
+            }
+        }
+
+        UnityEngine.GUI.color = buffer == str ? Color.white : Color.red;
+        buffer = UnityEngine.GUI.TextField(rect, buffer, Text.CurTextFieldStyle);
+        UnityEngine.GUI.color = Color.white;
+
+        var focus = UnityEngine.GUI.GetNameOfFocusedControl() == controlName;
+
+        if (buffer != str)
+        {
+            if (double.TryParse(buffer, out var result))
+            {
+                if (result >= min && result <= max)
+                {
+                    value = result;
+                }
+                else if (!focus)
+                {
+                    value = result < min ? min : max;
+                    buffer = value.ToString();
+                }
+            }
+            else if (!focus)
+            {
+                buffer = str;
+            }
+        }
+    }
 
     public static void Slider(LayoutRect layout, ref float value, float min, float max)
         => Slider(layout.Abs(layout.Horizontal ? -1f : 22f), ref value, min, max);
@@ -84,6 +159,20 @@ public static class LunarGUI
 
         if (newValue != value) UnityEngine.GUI.changed = true;
         value = newValue;
+    }
+
+    public static void Slider(LayoutRect layout, ref double value, double min, double max, int roundToDigits = 2)
+        => Slider(layout.Abs(layout.Horizontal ? -1f : 22f), ref value, min, max, roundToDigits);
+
+    public static void Slider(Rect rect, ref double value, double min, double max, int roundToDigits = 2)
+    {
+        var valueBefore = (float) value;
+        var valueAfter = valueBefore;
+
+        Slider(rect, ref valueAfter, (float) min, (float) max);
+
+        if (valueAfter != valueBefore)
+            value = Math.Round(valueAfter, roundToDigits);
     }
 
     public static void Slider(LayoutRect layout, ref int value, int min, int max)
@@ -126,9 +215,11 @@ public static class LunarGUI
     }
 
     public static void LabelCentered(LayoutRect layout, string labelCenter, string tooltip = null)
+        => LabelCentered(layout.Abs(layout.Horizontal ? -1f : Text.CalcSize(labelCenter).y), labelCenter, tooltip);
+
+    public static void LabelCentered(Rect rect, string labelCenter, string tooltip = null)
     {
         var labelCenterSize = Text.CalcSize(labelCenter);
-        var rect = layout.Abs(layout.Horizontal ? -1f : labelCenterSize.y);
         var centerRect = rect.RightHalf();
         centerRect.xMin -= labelCenterSize.x * 0.5f;
         if (tooltip != null) TooltipHandler.TipRegion(rect, tooltip);
