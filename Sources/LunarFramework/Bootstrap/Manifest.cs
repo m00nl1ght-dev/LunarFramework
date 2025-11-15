@@ -27,7 +27,7 @@ public class Manifest
     {
         #if RW_1_6_OR_GREATER
 
-        return DirectXmlLoader.ItemFromXmlFile<Manifest>(file);
+        return DirectXmlLoader.ItemFromXmlFile<Manifest>(file, false);
 
         #else
 
