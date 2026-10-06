@@ -19,19 +19,24 @@ internal static class HarmonyInliningFixer
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
+        var groupNames = new HashSet<string>(PatchGroup.AllGroups.Select(g => g.Name));
+
         bool HasAttribute(Patch patch)
         {
-            return patch.PatchMethod?.GetCustomAttribute<PatchTargetPotentiallyInlined>() != null;
+            return groupNames.Contains(patch.owner) && patch.PatchMethod?.GetCustomAttribute<PatchTargetPotentiallyInlined>() != null;
         }
 
         var patchedMethods = Harmony.GetAllPatchedMethods();
         var refreshTargets = new HashSet<MethodBase>();
 
-        foreach (var method in patchedMethods)
+        // The attribute is only used on patches applied by Lunar patch groups, so only the methods
+        // patched by those need to be checked, and resolving PatchMethod is only needed for their own patches
+        foreach (var method in PatchGroup.AllGroups.SelectMany(g => g.PatchedMethods).Distinct())
         {
             try
             {
                 var patchInfo = PatchProcessor.GetPatchInfo(method);
+                if (patchInfo == null) continue;
 
                 if (patchInfo.Prefixes.Any(HasAttribute) ||
                     patchInfo.Postfixes.Any(HasAttribute) ||
@@ -74,6 +79,10 @@ internal static class HarmonyInliningFixer
     }
 }
 
+/// <summary>
+/// Marks a patch whose target may be inlined into other methods, so that HarmonyInliningFixer re-patches the patched methods that reference it.
+/// HarmonyInliningFixer runs once, after the Lunar components have initialized, and only checks patches applied through a PatchGroup by then.
+/// </summary>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 public class PatchTargetPotentiallyInlined : Attribute;
 

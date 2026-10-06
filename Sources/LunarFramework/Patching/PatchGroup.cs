@@ -12,6 +12,8 @@ namespace LunarFramework.Patching;
 
 public class PatchGroup : IPatchGroup
 {
+    internal static readonly List<PatchGroup> AllGroups = [];
+
     public string Name { get; }
 
     public bool Active => _subscribers.Count > 0;
@@ -20,6 +22,8 @@ public class PatchGroup : IPatchGroup
 
     public IEnumerable<Type> OwnPatchClasses => _ownPatchClasses;
     public IEnumerable<IPatchGroup> OwnSubGroups => _ownSubGroups;
+
+    internal IEnumerable<MethodBase> PatchedMethods => _patchedMethods;
 
     private readonly HashSet<Type> _ownPatchClasses = [];
     private readonly HashSet<IPatchGroup> _ownSubGroups = [];
@@ -37,6 +41,7 @@ public class PatchGroup : IPatchGroup
         Name = name;
         _harmony = new Harmony(name);
         _unpatchDelay = unpatchDelay;
+        AllGroups.Add(this);
     }
 
     public PatchGroup(string name, float unpatchDelay, params Type[] patchClasses) : this(name, unpatchDelay)
