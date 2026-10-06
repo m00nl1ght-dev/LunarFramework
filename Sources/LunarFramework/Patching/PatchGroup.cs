@@ -222,7 +222,8 @@ public class PatchGroup : IPatchGroup
         }
     }
 
-    public void CheckForConflicts(Action<MethodBase, Patch> onConflict) => CheckForConflicts(_harmony.Id, onConflict);
+    // Checks a copy, since onConflict may change the group's patches
+    public void CheckForConflicts(Action<MethodBase, Patch> onConflict) => CheckForConflicts(_harmony.Id, [.. _patchedMethods], onConflict);
 
     public void CheckForConflicts(LogContext logger)
     {
@@ -236,18 +237,22 @@ public class PatchGroup : IPatchGroup
         });
     }
 
-    public static void CheckForConflicts(string id, Action<MethodBase, Patch> onConflict)
+    public static void CheckForConflicts(string id, Action<MethodBase, Patch> onConflict) => CheckForConflicts(id, Harmony.GetAllPatchedMethods(), onConflict);
+
+    private static void CheckForConflicts(string id, IEnumerable<MethodBase> methods, Action<MethodBase, Patch> onConflict)
     {
         bool ShouldCheckForConflicts(Patch patch)
         {
             return patch.owner == id && patch.PatchMethod?.GetCustomAttribute<PatchExcludedFromConflictCheckAttribute>() == null;
         }
 
-        foreach (var method in Harmony.GetAllPatchedMethods())
+        foreach (var method in methods)
         {
             try
             {
                 var patchInfo = Harmony.GetPatchInfo(method);
+                if (patchInfo == null) continue;
+
                 var prefix = patchInfo.Prefixes.FirstOrDefault(ShouldCheckForConflicts);
                 var transpiler = patchInfo.Transpilers.FirstOrDefault(ShouldCheckForConflicts);
 
