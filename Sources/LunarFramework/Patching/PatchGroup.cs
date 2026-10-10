@@ -12,6 +12,8 @@ namespace LunarFramework.Patching;
 
 public class PatchGroup : IPatchGroup
 {
+    internal static readonly List<PatchGroup> AllGroups = [];
+
     public string Name { get; }
 
     public bool Active => _subscribers.Count > 0;
@@ -21,10 +23,14 @@ public class PatchGroup : IPatchGroup
     public IEnumerable<Type> OwnPatchClasses => _ownPatchClasses;
     public IEnumerable<IPatchGroup> OwnSubGroups => _ownSubGroups;
 
+    internal IEnumerable<MethodBase> PatchedMethods => _patchedMethods;
+
     private readonly HashSet<Type> _ownPatchClasses = [];
     private readonly HashSet<IPatchGroup> _ownSubGroups = [];
 
     private readonly HashSet<PatchGroupSubscriber> _subscribers = [];
+
+    private readonly HashSet<MethodBase> _patchedMethods = [];
 
     private readonly float _unpatchDelay;
 
@@ -35,6 +41,7 @@ public class PatchGroup : IPatchGroup
         Name = name;
         _harmony = new Harmony(name);
         _unpatchDelay = unpatchDelay;
+        AllGroups.Add(this);
     }
 
     public PatchGroup(string name, float unpatchDelay, params Type[] patchClasses) : this(name, unpatchDelay)
@@ -149,6 +156,7 @@ public class PatchGroup : IPatchGroup
         if (Active && Applied)
         {
             _harmony.UnpatchAll(_harmony.Id);
+            _patchedMethods.Clear();
             foreach (var patchClass in _ownPatchClasses)
             {
                 TryPatch(patchClass);
@@ -180,7 +188,12 @@ public class PatchGroup : IPatchGroup
     {
         try
         {
-            _harmony.CreateClassProcessor(patchClass).Patch();
+            // Harmony before 2.4 returns null for a class without class-level Harmony attributes
+            foreach (var replacement in _harmony.CreateClassProcessor(patchClass).Patch() ?? [])
+            {
+                // Harmony returns null for methods it did not patch, such as ones that only have reverse patches
+                if (replacement != null) _patchedMethods.Add(Harmony.GetOriginalMethod(replacement));
+            }
         }
         catch (HarmonyException)
         {
@@ -197,6 +210,7 @@ public class PatchGroup : IPatchGroup
             {
                 Applied = false;
                 _harmony.UnpatchAll(_harmony.Id);
+                _patchedMethods.Clear();
             }
         }
 
@@ -213,7 +227,8 @@ public class PatchGroup : IPatchGroup
         }
     }
 
-    public void CheckForConflicts(Action<MethodBase, Patch> onConflict) => CheckForConflicts(_harmony.Id, onConflict);
+    // Checks a copy, since onConflict may change the group's patches
+    public void CheckForConflicts(Action<MethodBase, Patch> onConflict) => CheckForConflicts(_harmony.Id, [.. _patchedMethods], onConflict);
 
     public void CheckForConflicts(LogContext logger)
     {
@@ -227,18 +242,22 @@ public class PatchGroup : IPatchGroup
         });
     }
 
-    public static void CheckForConflicts(string id, Action<MethodBase, Patch> onConflict)
+    public static void CheckForConflicts(string id, Action<MethodBase, Patch> onConflict) => CheckForConflicts(id, Harmony.GetAllPatchedMethods(), onConflict);
+
+    private static void CheckForConflicts(string id, IEnumerable<MethodBase> methods, Action<MethodBase, Patch> onConflict)
     {
         bool ShouldCheckForConflicts(Patch patch)
         {
             return patch.owner == id && patch.PatchMethod?.GetCustomAttribute<PatchExcludedFromConflictCheckAttribute>() == null;
         }
 
-        foreach (var method in Harmony.GetAllPatchedMethods())
+        foreach (var method in methods)
         {
             try
             {
                 var patchInfo = Harmony.GetPatchInfo(method);
+                if (patchInfo == null) continue;
+
                 var prefix = patchInfo.Prefixes.FirstOrDefault(ShouldCheckForConflicts);
                 var transpiler = patchInfo.Transpilers.FirstOrDefault(ShouldCheckForConflicts);
 
