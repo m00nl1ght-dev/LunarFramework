@@ -11,7 +11,9 @@ public class LifecycleHooks
 
     internal LifecycleHooks() { }
 
+    #if !RW_1_7_OR_GREATER
     public static float FrameStartTime => LunarRoot.FrameStartTime;
+    #endif
 
     public void DoOnce(Action action, float delay = 0f)
     {

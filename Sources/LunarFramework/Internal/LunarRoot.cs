@@ -24,8 +24,10 @@ internal class LunarRoot : MonoBehaviour
     internal static event Action DoOnGUI;
     internal static event Action DoOnQuit;
 
+    #if !RW_1_7_OR_GREATER
     internal static float FrameStartTime;
     internal static int LastFrame = -1;
+    #endif
 
     internal static void Initialize()
     {
@@ -69,6 +71,13 @@ internal class LunarRoot : MonoBehaviour
         Interlocked.Exchange(ref DoOnceOnMainMenu, null)?.Invoke();
     }
 
+    internal static void OnQuit()
+    {
+        Interlocked.Exchange(ref DoOnQuit, null)?.Invoke();
+    }
+
+    #if !RW_1_7_OR_GREATER
+
     private void FixedUpdate()
     {
         if (Time.frameCount > LastFrame)
@@ -77,6 +86,8 @@ internal class LunarRoot : MonoBehaviour
             FrameStartTime = Time.realtimeSinceStartup;
         }
     }
+
+    #endif
 
     private void Update()
     {
@@ -88,8 +99,12 @@ internal class LunarRoot : MonoBehaviour
         DoOnGUI?.Invoke();
     }
 
+    #if !RW_1_7_OR_GREATER
+
     private void OnApplicationQuit()
     {
         DoOnQuit?.Invoke();
     }
+
+    #endif
 }
