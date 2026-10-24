@@ -18,6 +18,10 @@ internal class LunarRoot : MonoBehaviour
     internal static readonly PatchGroup CompatPatchGroup = new("LunarFramework.Compat");
     internal static readonly PatchGroup BootstrapPatchGroup = new("LunarFramework.Bootstrap");
 
+    #if RW_1_7_OR_GREATER
+    internal static readonly PatchGroup OnGUIPatchGroup = new("LunarFramework.OnGUI");
+    #endif
+
     internal static event Action DoOnceOnUpdate;
     internal static event Action DoOnceOnMainMenu;
 
@@ -42,12 +46,20 @@ internal class LunarRoot : MonoBehaviour
 
             BootstrapPatchGroup.AddPatches(typeof(LunarRoot).Assembly);
             BootstrapPatchGroup.Subscribe();
+
+            #if RW_1_7_OR_GREATER
+            OnGUIPatchGroup.AddPatches(typeof(LunarRoot).Assembly);
+            #endif
         }
         catch
         {
             MainPatchGroup?.UnsubscribeAll();
             CompatPatchGroup?.UnsubscribeAll();
             BootstrapPatchGroup?.UnsubscribeAll();
+
+            #if RW_1_7_OR_GREATER
+            OnGUIPatchGroup?.UnsubscribeAll();
+            #endif
 
             throw;
         }
@@ -69,6 +81,11 @@ internal class LunarRoot : MonoBehaviour
     internal static void OnMainMenuReady()
     {
         Interlocked.Exchange(ref DoOnceOnMainMenu, null)?.Invoke();
+    }
+
+    internal static void OnGUI()
+    {
+        DoOnGUI?.Invoke();
     }
 
     internal static void OnQuit()
@@ -94,12 +111,12 @@ internal class LunarRoot : MonoBehaviour
         Interlocked.Exchange(ref DoOnceOnUpdate, null)?.Invoke();
     }
 
+    #if !RW_1_7_OR_GREATER
+
     private void OnGUI()
     {
         DoOnGUI?.Invoke();
     }
-
-    #if !RW_1_7_OR_GREATER
 
     private void OnApplicationQuit()
     {

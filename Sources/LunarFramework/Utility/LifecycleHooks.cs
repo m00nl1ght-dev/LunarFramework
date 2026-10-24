@@ -65,6 +65,10 @@ public class LifecycleHooks
 
     public void DoOnGUI(Action action)
     {
+        #if RW_1_7_OR_GREATER
+        LunarRoot.OnGUIPatchGroup.Subscribe();
+        #endif
+
         LunarRoot.DoOnGUI += action;
     }
 }

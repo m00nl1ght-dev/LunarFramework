@@ -12,7 +12,7 @@ namespace LunarFramework.Internal.Patches;
 /// </summary>
 [PatchGroup("Main")]
 [HarmonyPatch(typeof(Root))]
-internal static class Patch_Verse_Root
+internal static class Patch_Verse_Root_Shutdown
 {
     [HarmonyPrefix]
     [HarmonyPatch(nameof(Root.Shutdown))]
