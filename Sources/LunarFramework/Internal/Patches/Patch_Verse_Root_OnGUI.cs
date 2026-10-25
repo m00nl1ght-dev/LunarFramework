@@ -21,7 +21,7 @@ internal static class Patch_Verse_Root_OnGUI
     {
         try
         {
-            LunarRoot.OnGUI();
+            LunarRoot.InvokeOnGUI();
         }
         catch (Exception e)
         {

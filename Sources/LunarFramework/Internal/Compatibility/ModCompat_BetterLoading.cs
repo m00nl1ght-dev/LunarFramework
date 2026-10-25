@@ -59,7 +59,7 @@ internal class ModCompat_BetterLoading : ModCompat
     {
         if (LunarRoot.Instance != null)
         {
-            LunarRoot.OnMainMenuReady();
+            LunarRoot.InvokeOnMainMenuReady();
         }
         else
         {

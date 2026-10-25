@@ -78,17 +78,17 @@ internal class LunarRoot : MonoBehaviour
         DoOnceOnUpdate += () => Instance.StartCoroutine(coroutine);
     }
 
-    internal static void OnMainMenuReady()
+    internal static void InvokeOnMainMenuReady()
     {
         Interlocked.Exchange(ref DoOnceOnMainMenu, null)?.Invoke();
     }
 
-    internal static void OnGUI()
+    internal static void InvokeOnGUI()
     {
         DoOnGUI?.Invoke();
     }
 
-    internal static void OnQuit()
+    internal static void InvokeOnQuit()
     {
         Interlocked.Exchange(ref DoOnQuit, null)?.Invoke();
     }

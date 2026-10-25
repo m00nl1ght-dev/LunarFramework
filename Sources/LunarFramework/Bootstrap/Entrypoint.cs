@@ -349,6 +349,19 @@ internal static class Entrypoint
                 component.LoadingState = LoadingState.Loaded;
             }
         }
+
+        #if RW_1_7_OR_GREATER
+
+        try
+        {
+            HarmonyInliningFixer.Apply();
+        }
+        catch (Exception e)
+        {
+            LunarRoot.Logger.Fatal("Error in HarmonyInliningFixer", e);
+        }
+
+        #endif
     }
 
     /// <summary>
@@ -379,7 +392,7 @@ internal static class Entrypoint
                 mod.LoadingState = LoadingState.Initialized;
             }
 
-            #if RW_1_6_OR_GREATER
+            #if RW_1_6
 
             try
             {

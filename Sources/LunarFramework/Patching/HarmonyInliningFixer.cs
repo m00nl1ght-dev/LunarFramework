@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using LunarFramework.Bootstrap;
 using LunarFramework.Internal;
 
 namespace LunarFramework.Patching;
@@ -14,10 +15,57 @@ internal static class HarmonyInliningFixer
 {
     public static void Apply()
     {
-        var harmony = new Harmony("LF_inlining_fixer");
-
         var stopwatch = new Stopwatch();
         stopwatch.Start();
+
+        var refreshTargets = new HashSet<MethodBase>();
+
+        #if RW_1_7_OR_GREATER
+
+        var monoModPlatform = AccessTools.PropertyGetter("MonoMod.Core.Platforms.PlatformTriple:Current")?.Invoke(null, null);
+        if (monoModPlatform == null) throw new Exception("Failed to obtain MonoMod platform instance");
+
+        var tryDisableInliningMethod = AccessTools.Method("MonoMod.Core.Platforms.PlatformTriple:TryDisableInlining");
+        if (tryDisableInliningMethod == null) throw new Exception("Failed to find TryDisableInlining method in MonoMod");
+
+        var getOriginalMethod = AccessTools.Method("HarmonyLib.PatchTools:GetOriginalMethod");
+        if (getOriginalMethod == null) throw new Exception("Failed to find GetOriginalMethod in Harmony");
+
+        foreach (var component in Entrypoint.LunarComponents.Values)
+        {
+            foreach (var type in AccessTools.GetTypesFromAssembly(component.LoadedAssembly))
+            {
+                if (type.IsDefined(typeof(HarmonyPatch)))
+                {
+                    var attrOnType = type.GetCustomAttribute<HarmonyPatch>();
+
+                    foreach (var method in AccessTools.GetDeclaredMethods(type))
+                    {
+                        if (method.IsDefined(typeof(HarmonyPatch)) && method.IsDefined(typeof(PatchTargetPotentiallyInlined)))
+                        {
+                            var attrOnMethod = method.GetCustomAttribute<HarmonyPatch>();
+                            var mergedInfo = attrOnType.info.Merge(attrOnMethod.info);
+
+                            var originalMethod = getOriginalMethod.Invoke(null, [mergedInfo]) as MethodBase;
+                            if (originalMethod != null && refreshTargets.Add(originalMethod))
+                            {
+                                var result = (bool) tryDisableInliningMethod.Invoke(monoModPlatform, [originalMethod]);
+                                if (result)
+                                {
+                                    LunarRoot.Logger.Debug($"Successfully disabled inlining for method {originalMethod}");
+                                }
+                                else
+                                {
+                                    LunarRoot.Logger.Warn($"Failed to disable inlining for method {originalMethod}");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        #else
 
         var groupNames = new HashSet<string>(PatchGroup.AllGroups.Select(g => g.Name));
 
@@ -25,9 +73,6 @@ internal static class HarmonyInliningFixer
         {
             return groupNames.Contains(patch.owner) && patch.PatchMethod?.GetCustomAttribute<PatchTargetPotentiallyInlined>() != null;
         }
-
-        var patchedMethods = Harmony.GetAllPatchedMethods();
-        var refreshTargets = new HashSet<MethodBase>();
 
         // The attribute is only used on patches applied by Lunar patch groups, so only the methods
         // patched by those need to be checked, and resolving PatchMethod is only needed for their own patches
@@ -52,9 +97,15 @@ internal static class HarmonyInliningFixer
             }
         }
 
+        #endif
+
         if (refreshTargets.Count == 0) return;
 
         var count = 0;
+
+        var patchedMethods = Harmony.GetAllPatchedMethods();
+
+        var harmony = new Harmony("LF_inlining_fixer");
 
         foreach (var method in patchedMethods)
         {
@@ -79,10 +130,6 @@ internal static class HarmonyInliningFixer
     }
 }
 
-/// <summary>
-/// Marks a patch whose target may be inlined into other methods, so that HarmonyInliningFixer re-patches the patched methods that reference it.
-/// HarmonyInliningFixer runs once, after the Lunar components have initialized, and only checks patches applied through a PatchGroup by then.
-/// </summary>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 public class PatchTargetPotentiallyInlined : Attribute;
 

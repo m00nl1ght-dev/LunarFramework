@@ -20,7 +20,7 @@ internal static class Patch_Verse_Root_Shutdown
     {
         try
         {
-            LunarRoot.OnQuit();
+            LunarRoot.InvokeOnQuit();
         }
         catch (Exception e)
         {

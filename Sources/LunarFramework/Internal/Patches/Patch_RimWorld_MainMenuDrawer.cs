@@ -12,6 +12,6 @@ internal static class Patch_RimWorld_MainMenuDrawer
     [HarmonyPatch(nameof(MainMenuDrawer.Init))]
     private static void Init_Postfix()
     {
-        LunarRoot.OnMainMenuReady();
+        LunarRoot.InvokeOnMainMenuReady();
     }
 }
