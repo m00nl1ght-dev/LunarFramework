@@ -49,7 +49,11 @@ internal static class HarmonyInliningFixer
                             var originalMethod = getOriginalMethod.Invoke(null, [mergedInfo]) as MethodBase;
                             if (originalMethod != null && refreshTargets.Add(originalMethod))
                             {
-                                var result = (bool) tryDisableInliningMethod.Invoke(monoModPlatform, [originalMethod]);
+                                var args = tryDisableInliningMethod.GetParameters().Length == 1 // fix for #3
+                                    ? new object[] { originalMethod }
+                                    : new object[] { originalMethod, default(RuntimeMethodHandle) };
+
+                                var result = (bool) tryDisableInliningMethod.Invoke(monoModPlatform, args);
                                 if (result)
                                 {
                                     LunarRoot.Logger.Debug($"Successfully disabled inlining for method {originalMethod}");
